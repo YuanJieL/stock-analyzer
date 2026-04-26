@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-04-26 16:07",
+  "updated_at": "2026-04-26 16:20",
   "stocks": [
     {
       "code": "3037",
@@ -8,10 +8,10 @@
       "price": 0,
       "change": 0,
       "scores": {
-        "total": 51,
-        "fundamental": 56,
+        "total": 52,
+        "fundamental": 52,
         "technical": 36,
-        "chips": 62
+        "chips": 72
       },
       "fundamental": {
         "eps": 0,
@@ -22,7 +22,7 @@
         "dividend_yield": 0,
         "debt_ratio": 0,
         "revenue_growth": 0,
-        "note": "EPS 0 元，ROE 0%，殖利率 0%"
+        "note": "基本面資料暫無法取得"
       },
       "technical": {
         "price": 0,
@@ -39,14 +39,14 @@
         "resistance": 0,
         "ma20_val": 0,
         "ma60_val": 0,
-        "note": "技術面中性觀望"
+        "note": "技術面資料暫無法取得"
       },
       "chips": {
         "foreign_days": 9,
         "foreign_net": 2176601,
-        "trust_days": 0,
-        "trust_net": 0,
-        "dealer_net": -492805,
+        "trust_days": -1,
+        "trust_net": -492805,
+        "dealer_net": 363668,
         "big_holder_change": "N/A",
         "margin_ratio": "N/A",
         "is_warning": false,
@@ -60,10 +60,10 @@
       "price": 0,
       "change": 0,
       "scores": {
-        "total": 46,
-        "fundamental": 56,
+        "total": 51,
+        "fundamental": 52,
         "technical": 36,
-        "chips": 46
+        "chips": 66
       },
       "fundamental": {
         "eps": 0,
@@ -74,7 +74,7 @@
         "dividend_yield": 0,
         "debt_ratio": 0,
         "revenue_growth": 0,
-        "note": "EPS 0 元，ROE 0%，殖利率 0%"
+        "note": "基本面資料暫無法取得"
       },
       "technical": {
         "price": 0,
@@ -91,18 +91,18 @@
         "resistance": 0,
         "ma20_val": 0,
         "ma60_val": 0,
-        "note": "技術面中性觀望"
+        "note": "技術面資料暫無法取得"
       },
       "chips": {
-        "foreign_days": -1,
-        "foreign_net": -704145,
-        "trust_days": 0,
-        "trust_net": 0,
-        "dealer_net": 2663867,
+        "foreign_days": 5,
+        "foreign_net": 3812680,
+        "trust_days": -9,
+        "trust_net": -376887,
+        "dealer_net": 2531273,
         "big_holder_change": "N/A",
         "margin_ratio": "N/A",
         "is_warning": false,
-        "note": "籌碼面無明顯訊號"
+        "note": "外資連買5天"
       }
     },
     {
@@ -112,10 +112,10 @@
       "price": 0,
       "change": 0,
       "scores": {
-        "total": 45,
-        "fundamental": 56,
+        "total": 46,
+        "fundamental": 52,
         "technical": 36,
-        "chips": 42
+        "chips": 51
       },
       "fundamental": {
         "eps": 0,
@@ -126,7 +126,7 @@
         "dividend_yield": 0,
         "debt_ratio": 0,
         "revenue_growth": 0,
-        "note": "EPS 0 元，ROE 0%，殖利率 0%"
+        "note": "基本面資料暫無法取得"
       },
       "technical": {
         "price": 0,
@@ -143,18 +143,18 @@
         "resistance": 0,
         "ma20_val": 0,
         "ma60_val": 0,
-        "note": "技術面中性觀望"
+        "note": "技術面資料暫無法取得"
       },
       "chips": {
         "foreign_days": -1,
         "foreign_net": -4078397,
-        "trust_days": 0,
-        "trust_net": 0,
-        "dealer_net": -38578,
+        "trust_days": -1,
+        "trust_net": -38578,
+        "dealer_net": 1797695,
         "big_holder_change": "N/A",
         "margin_ratio": "N/A",
         "is_warning": false,
-        "note": "籌碼面無明顯訊號"
+        "note": "無明顯法人訊號"
       }
     },
     {
@@ -164,10 +164,10 @@
       "price": 0,
       "change": 0,
       "scores": {
-        "total": 48,
-        "fundamental": 56,
+        "total": 51,
+        "fundamental": 52,
         "technical": 36,
-        "chips": 52
+        "chips": 68
       },
       "fundamental": {
         "eps": 0,
@@ -178,7 +178,7 @@
         "dividend_yield": 0,
         "debt_ratio": 0,
         "revenue_growth": 0,
-        "note": "EPS 0 元，ROE 0%，殖利率 0%"
+        "note": "基本面資料暫無法取得"
       },
       "technical": {
         "price": 0,
@@ -195,18 +195,18 @@
         "resistance": 0,
         "ma20_val": 0,
         "ma60_val": 0,
-        "note": "技術面中性觀望"
+        "note": "技術面資料暫無法取得"
       },
       "chips": {
         "foreign_days": 1,
         "foreign_net": 8434606,
-        "trust_days": 0,
-        "trust_net": 0,
-        "dealer_net": 1416886,
+        "trust_days": 5,
+        "trust_net": 1416886,
+        "dealer_net": 638444,
         "big_holder_change": "N/A",
         "margin_ratio": "N/A",
         "is_warning": false,
-        "note": "籌碼面無明顯訊號"
+        "note": "投信連買5天"
       }
     },
     {
@@ -216,10 +216,10 @@
       "price": 0,
       "change": 0,
       "scores": {
-        "total": 48,
-        "fundamental": 56,
+        "total": 50,
+        "fundamental": 52,
         "technical": 36,
-        "chips": 52
+        "chips": 63
       },
       "fundamental": {
         "eps": 0,
@@ -230,7 +230,7 @@
         "dividend_yield": 0,
         "debt_ratio": 0,
         "revenue_growth": 0,
-        "note": "EPS 0 元，ROE 0%，殖利率 0%"
+        "note": "基本面資料暫無法取得"
       },
       "technical": {
         "price": 0,
@@ -247,18 +247,18 @@
         "resistance": 0,
         "ma20_val": 0,
         "ma60_val": 0,
-        "note": "技術面中性觀望"
+        "note": "技術面資料暫無法取得"
       },
       "chips": {
         "foreign_days": 2,
         "foreign_net": 8305592,
-        "trust_days": 0,
-        "trust_net": 0,
-        "dealer_net": 1168156,
+        "trust_days": 2,
+        "trust_net": 1168156,
+        "dealer_net": 1057987,
         "big_holder_change": "N/A",
         "margin_ratio": "N/A",
         "is_warning": false,
-        "note": "籌碼面無明顯訊號"
+        "note": "投信連買2天"
       }
     }
   ],
