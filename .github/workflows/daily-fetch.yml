@@ -1,0 +1,41 @@
+name: 每日台股資料更新
+
+on:
+  # 每天台灣時間 16:30 自動執行（UTC 08:30）
+  schedule:
+    - cron: '30 8 * * 1-5'  # 週一到週五
+
+  # 也可以手動觸發（測試用）
+  workflow_dispatch:
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1：下載你的程式碼
+      - name: 下載程式碼
+        uses: actions/checkout@v4
+
+      # Step 2：安裝 Python
+      - name: 安裝 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Step 3：安裝套件
+      - name: 安裝套件
+        run: pip install -r requirements.txt
+
+      # Step 4：執行爬蟲
+      - name: 執行資料抓取
+        run: python fetcher.py
+
+      # Step 5：把結果存回 GitHub
+      - name: 儲存分析結果
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/analysis.json
+          git diff --staged --quiet || git commit -m "每日資料更新 $(date +'%Y-%m-%d')"
+          git push
