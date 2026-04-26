@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>台股智能分析系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* ─── 基礎設定 ─── */
+:root {
+  --bg: #06090f;
+  --surface: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.08);
+  --green: #10b981;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --text: rgba(255,255,255,0.85);
+  --muted: rgba(255,255,255,0.35);
+  --faint: rgba(255,255,255,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── 背景效果 ─── */
+.bg-grid {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(16,185,129,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16,185,129,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.bg-glow {
+  position: fixed; top: -20%; left: -20%;
+  width: 60vw; height: 60vh; border-radius: 50%;
+  background: radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ─── 版面 ─── */
+.wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+/* ─── Header ─── */
+.header { margin-bottom: 32px; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; margin-right: 8px; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.status-label { color: rgba(16,185,129,.7); font-size: 11px; letter-spacing: .15em; text-transform: uppercase; }
+.site-title { font-family: 'Syne', sans-serif; font-size: 1.9rem; font-weight: 800; letter-spacing: -.03em; margin: 6px 0 4px; }
+.site-sub { color: var(--muted); font-size: 11px; }
+.header-right { text-align: right; }
+.total-value { font-size: 1.8rem; font-weight: 700; }
+.total-pnl { font-size: .9rem; font-weight: 700; margin-top: 2px; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+
+/* ─── Nav ─── */
+.nav {
+  display: flex; gap: 4px; padding: 4px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 14px; margin-bottom: 24px;
+}
+.nav-btn {
+  flex: 1; padding: 10px 4px; border: none; background: transparent;
+  color: var(--muted); font-family: inherit; font-size: 11px; font-weight: 700;
+  border-radius: 10px; cursor: pointer; transition: all .2s;
+}
+.nav-btn.active { background: rgba(255,255,255,0.07); color: white; }
+.nav-btn:hover:not(.active) { color: rgba(255,255,255,.65); }
+
+/* ─── 卡片 ─── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 20px; margin-bottom: 12px;
+}
+.card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 16px; }
+
+/* ─── 排行清單 ─── */
+.stock-row {
+  display: grid; grid-template-columns: 24px 68px 1fr auto;
+  gap: 12px; align-items: center;
+  padding: 14px 16px; border-radius: 12px; margin-bottom: 8px;
+  cursor: pointer; transition: all .2s;
+  border: 1px solid transparent;
+}
+.stock-row:hover { background: rgba(255,255,255,0.04); }
+.stock-row.buy   { border-color: rgba(16,185,129,0.25); }
+.stock-row.watch { border-color: rgba(245,158,11,0.2); }
+.stock-row.avoid { border-color: rgba(239,68,68,0.2); }
+.rank { color: var(--faint); font-size: 13px; font-weight: 700; }
+.stock-name { font-weight: 700; font-size: .9rem; }
+.stock-code { color: var(--muted); font-size: 11px; }
+.stock-sector { color: var(--muted); font-size: 10px; margin-top: 2px; }
+.sub-bars { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
+.sub-bar-label { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; color: var(--muted); }
+.bar-track { background: rgba(255,255,255,0.08); border-radius: 3px; height: 4px; }
+.bar-fill { height: 4px; border-radius: 3px; transition: width .7s ease; }
+
+/* ─── 徽章 ─── */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid;
+}
+.badge-dot { width: 6px; height: 6px; border-radius: 50%; animation: pulse 2s infinite; }
+.badge.buy   { background: rgba(16,185,129,.15);  color: var(--green);  border-color: rgba(16,185,129,.3); }
+.badge.watch { background: rgba(245,158,11,.15);  color: var(--amber);  border-color: rgba(245,158,11,.3); }
+.badge.avoid { background: rgba(239,68,68,.15);   color: var(--red);    border-color: rgba(239,68,68,.3); }
+.badge.buy .badge-dot   { background: var(--green); }
+.badge.watch .badge-dot { background: var(--amber); }
+.badge.avoid .badge-dot { background: var(--red); }
+
+/* ─── 量規 ─── */
+.gauge-wrap { position: relative; width: 64px; height: 64px; }
+
+/* ─── 持股 ─── */
+.portfolio-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px; border-radius: 12px; margin-bottom: 8px;
+  background: rgba(255,255,255,0.025);
+}
+.pnl-bar { width: 3px; height: 44px; border-radius: 2px; flex-shrink: 0; }
+.portfolio-name { font-weight: 700; font-size: .85rem; }
+.portfolio-meta { color: var(--muted); font-size: 10px; margin-top: 2px; }
+.portfolio-value { font-weight: 700; font-size: .9rem; text-align: right; }
+.portfolio-pct { font-size: 11px; font-weight: 700; margin-top: 2px; text-align: right; }
+
+/* ─── 個股分析 ─── */
+.stock-selector { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; }
+.stock-selector::-webkit-scrollbar { height: 0; }
+.sel-btn {
+  flex-shrink: 0; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer;
+  transition: all .2s;
+}
+.sel-btn.active { background: rgba(16,185,129,.15); color: var(--green); border-color: rgba(16,185,129,.4); }
+.layer-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.layer-tab {
+  flex: 1; padding: 8px; border-radius: 10px;
+  border: 1px solid var(--border); background: transparent;
+  font-family: inherit; font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: all .2s; color: var(--muted);
+}
+.layer-tab.active-f { color: var(--blue);   border-color: rgba(59,130,246,.5);  background: rgba(59,130,246,.08); }
+.layer-tab.active-t { color: var(--amber);  border-color: rgba(245,158,11,.5); background: rgba(245,158,11,.08); }
+.layer-tab.active-c { color: var(--purple); border-color: rgba(168,85,247,.5); background: rgba(168,85,247,.08); }
+
+.metric-row { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.metric-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.metric-label { color: var(--muted); font-size: 11px; }
+.metric-value { font-weight: 700; font-size: .85rem; }
+.metric-desc { color: rgba(255,255,255,.2); font-size: 10px; margin-top: 4px; }
+.metric-score { color: var(--muted); font-size: 10px; }
+
+.info-box { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.info-box p { font-size: 11px; color: var(--muted); line-height: 1.7; }
+
+.strategy-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 16px 0; }
+.strategy-item { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 12px; text-align: center; }
+.strategy-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+.strategy-value { font-weight: 700; font-size: 1rem; }
+
+/* ─── AI 分析 ─── */
+.ai-box { background: rgba(16,185,129,.04); border: 1px solid rgba(16,185,129,.2); border-radius: 16px; padding: 20px; }
+.ai-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.ai-title { color: var(--green); font-weight: 700; font-size: .85rem; }
+.ai-sub { color: var(--muted); font-size: 10px; margin-top: 2px; }
+.ai-btn {
+  padding: 8px 16px; border-radius: 10px; border: 1px solid rgba(16,185,129,.3);
+  background: rgba(16,185,129,.15); color: var(--green);
+  font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer; transition: all .2s;
+}
+.ai-btn:disabled { opacity: .4; cursor: default; }
+.ai-placeholder { text-align: center; padding: 32px; color: var(--faint); font-size: 12px; }
+.ai-summary { color: rgba(255,255,255,.65); font-size: .8rem; line-height: 1.7; margin-bottom: 16px; }
+.risk-item { color: rgba(245,158,11,.7); font-size: 11px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.conviction-badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+
+/* ─── 總覽 ─── */
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.summary-item { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px; }
+.summary-label { font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+.summary-value { font-weight: 700; font-size: 1rem; }
+.summary-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* ─── 進度條 ─── */
+.progress-wrap { margin-top: 12px; }
+.progress-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+.progress-track { background: rgba(255,255,255,0.08); border-radius: 6px; height: 10px; }
+.progress-fill { height: 10px; border-radius: 6px; background: linear-gradient(90deg, #059669, var(--green)); transition: width 1s ease; }
+.progress-label { text-align: center; font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+/* ─── 警示 ─── */
+.warning-box { background: rgba(245,158,11,.06); border: 1px solid rgba(245,158,11,.2); border-radius: 12px; padding: 14px; display: flex; gap: 10px; }
+.warning-content { font-size: 11px; color: rgba(255,255,255,.5); line-height: 1.7; }
+.warning-title { color: var(--amber); font-weight: 700; margin-bottom: 4px; }
+
+/* ─── 更新時間 ─── */
+.updated { font-size: 10px; color: var(--faint); margin-bottom: 6px; }
+
+/* ─── Footer ─── */
+.footer { text-align: center; font-size: 10px; color: rgba(255,255,255,.12); margin-top: 32px; padding: 16px; }
+
+/* ─── 響應式 ─── */
+@media (max-width: 600px) {
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+  .strategy-grid { grid-template-columns: 1fr 1fr 1fr; }
+  .header-row { flex-direction: column; gap: 12px; }
+  .stock-row { grid-template-columns: 20px 56px 1fr auto; gap: 8px; }
+}
+
+/* ─── 頁面隱藏 ─── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ─── loading ─── */
+.loading { text-align: center; padding: 60px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="wrap">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div><span class="status-dot"></span><span class="status-label">系統運行中</span></div>
+        <h1 class="site-title">台股智能分析系統</h1>
+        <div class="site-sub" id="updated-at">載入中...</div>
+      </div>
+      <div class="header-right">
+        <div style="color:var(--muted);font-size:10px;margin-bottom:4px;">持股總值</div>
+        <div class="total-value" id="total-value">—</div>
+        <div class="total-pnl" id="total-pnl">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="nav">
+    <button class="nav-btn active" onclick="showPage('overview')">⚡ 總覽</button>
+    <button class="nav-btn" onclick="showPage('portfolio')">📊 持股</button>
+    <button class="nav-btn" onclick="showPage('detail')">🔍 個股</button>
+    <button class="nav-btn" onclick="showPage('logic')">📖 邏輯</button>
+  </div>
+
+  <!-- ══ 總覽 ══ -->
+  <div id="page-overview" class="page active">
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="summary-label">可用現金（估）</div>
+        <div class="summary-value">~10萬</div>
+        <div class="summary-sub">請至玉山確認</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">每月追加</div>
+        <div class="summary-value">NT$2萬</div>
+        <div class="summary-sub">5月起</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">目標（1年）</div>
+        <div class="summary-value">100萬</div>
+        <div class="summary-sub">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚡ 買進訊號股票</div>
+      <div id="buy-signals"><div class="loading">資料載入中...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎯 年度目標進度</div>
+      <div class="progress-wrap">
+        <div class="progress-labels">
+          <span id="progress-current">—</span>
+          <span>目標 100萬</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+        <div class="progress-label" id="progress-pct">—</div>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <span style="font-size:1.2rem">⚠️</span>
+      <div>
+        <div class="warning-title">本週風險提示</div>
+        <div class="warning-content">台股大盤季線乖離率偏高，短線震盪風險上升。建議持股控制在5成，新倉採分批布局，停損線-10%嚴格執行。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 持股 ══ -->
+  <div id="page-portfolio" class="page">
+    <div class="card">
+      <div class="card-title">📊 現有持股損益</div>
+      <div class="updated">⚠️ 股價每日盤後自動更新，請以玉山App為準</div>
+      <div id="portfolio-list"><div class="loading">資料載入中...</div></div>
+      <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--muted);font-size:.8rem;font-weight:700">合計</span>
+        <div style="text-align:right">
+          <div class="total-value" id="portfolio-total" style="font-size:1.2rem">—</div>
+          <div class="total-pnl" id="portfolio-pnl" style="font-size:.85rem">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 個股分析 ══ -->
+  <div id="page-detail" class="page">
+    <div class="stock-selector" id="stock-selector"></div>
+    <div id="detail-content"><div class="loading">請選擇股票</div></div>
+  </div>
+
+  <!-- ══ 邏輯說明 ══ -->
+  <div id="page-logic" class="page">
+    <div class="card" style="border-color:rgba(59,130,246,.2)">
+      <div class="card-title" style="color:var(--blue)">📊 Layer 1：基本面分析</div>
+      <div class="info-box"><p>判斷「這家公司值得買嗎」— 從財報評估公司長期內在價值</p></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">EPS成長率</span></div><div class="metric-desc">≥40%=100分 / ≥25%=80分 / ≥10%=60分 / 衰退=10分</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">ROE股東報酬率</span></div><div class="metric-desc">≥25%=100分 / ≥18%=80分 / ≥12%=60分</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">P/E本益比</span></div><div class="metric-desc">越低越好：≤15=100分 / ≤20=80分 / ≤30=60分 / ≤45=40分</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">P/B淨值比</span></div><div class="metric-desc">越低越接近淨資產：≤1.5=100 / ≤2.5=80 / ≤4=60</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">現金殖利率</span></div><div class="metric-desc">≥5%=100分 / ≥3.5%=80分 / ≥2%=60分</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">負債比率</span></div><div class="metric-desc">越低越穩健：≤30%=100 / ≤45%=80 / ≤60%=60 / ≤75%=40</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">營收成長率</span></div><div class="metric-desc">≥35%=100分 / ≥20%=80分 / ≥10%=60分</div></div>
+      <div style="margin-top:12px;font-size:10px;color:var(--muted)">📡 資料來源：公開資訊觀測站財報API、月營收公告（每月10日後更新）</div>
+    </div>
+
+    <div class="card" style="border-color:rgba(245,158,11,.2)">
+      <div class="card-title" style="color:var(--amber)">📈 Layer 2：技術面分析</div>
+      <div class="info-box"><p>判斷「何時買賣最有利」— 分析K線、均線、動能指標找進出場時機</p></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">趨勢方向</span></div><div class="metric-desc">站上MA20且MA60=上升(100) / 只站MA20=盤整(55) / 跌破=下降(20)</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">KD隨機指標</span></div><div class="metric-desc">K&lt;30超賣買點=90分 / K&lt;50=75 / K&lt;70=55 / K&gt;70過熱=30分</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">MACD</span></div><div class="metric-desc">黃金交叉=100 / 翻多=85 / 多頭=75 / 偏多=65 / 持平=50 / 死叉=20</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">RSI強弱指標</span></div><div class="metric-desc">&lt;30超賣=90分 / 30~50=75 / 50~65=60 / 65~80=40 / &gt;80超買=15</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">成交量</span></div><div class="metric-desc">大量/放量=90（趨勢確認） / 平穩=65 / 縮量=35（需謹慎）</div></div>
+      <div style="margin-top:12px;font-size:10px;color:var(--muted)">📡 資料來源：Yahoo Finance OHLCV，指標自行公式計算（MA/KD/MACD/RSI）</div>
+    </div>
+
+    <div class="card" style="border-color:rgba(168,85,247,.2)">
+      <div class="card-title" style="color:var(--purple)">🔮 Layer 3：籌碼面分析</div>
+      <div class="info-box"><p>判斷「誰在買賣，方向跟不跟」— 追蹤大戶法人動向，外資投信同步買超是最強信號</p></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">外資連買天數（權重35%）</span></div><div class="metric-desc">≥5天=100 / ≥3天=80 / ≥1天=60 / 賣超=10分（最重要指標）</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">投信連買天數（權重20%）</span></div><div class="metric-desc">≥3天=100 / ≥1天=75 / -1天=50 / 持續賣=20分</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">自營商淨買超（權重10%）</span></div><div class="metric-desc">&gt;500張=80 / &gt;0=60 / 賣超=40（短線參考指標）</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">大戶持股變化（權重20%）</span></div><div class="metric-desc">增加=85（籌碼集中看好） / 減少=45（需注意）</div></div>
+      <div class="metric-row"><div class="metric-header"><span class="metric-label">融資水位（權重15%）</span></div><div class="metric-desc">低=90（健康） / 中=60 / 高=30（散戶過熱，風險信號）</div></div>
+      <div style="margin-top:12px;font-size:10px;color:var(--muted)">📡 資料來源：證交所TWSE OpenAPI三大法人（免費官方API）、集保結算所大戶持股</div>
+    </div>
+
+    <div class="card" style="border-color:rgba(16,185,129,.2)">
+      <div class="card-title" style="color:var(--green)">🧮 總分計算公式</div>
+      <div style="font-family:monospace;font-size:11px;color:var(--muted);background:rgba(0,0,0,.3);border-radius:10px;padding:16px;line-height:2">
+        <span style="color:var(--green)">總分 =</span><br>
+        &nbsp;&nbsp;（基本面分數 × 35%）<br>
+        &nbsp;&nbsp;+（技術面分數 × 35%）<br>
+        &nbsp;&nbsp;+（籌碼面分數 × 30%）<br><br>
+        <span style="color:rgba(255,255,255,.3)">各層分數 = Σ（指標原始分 × 子項目權重）</span><br>
+        <span style="color:rgba(255,255,255,.3)">75分以上 → 買進 🟢</span><br>
+        <span style="color:rgba(255,255,255,.3)">55~74分  → 觀察 🟡</span><br>
+        <span style="color:rgba(255,255,255,.3)">54分以下 → 迴避 🔴</span>
+      </div>
+      <div style="margin-top:12px;font-size:10px;color:var(--muted)">📡 每日盤後 16:30 由 Railway 自動執行 Python 爬蟲，更新 analysis.json</div>
+    </div>
+  </div>
+
+  <div class="footer">⚠️ 本系統分析僅供參考，非投資建議。投資前請以玉山證券App確認即時股價。</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// 【資料來源說明】
+// 本前端從同目錄的 data/analysis.json 讀取資料
+// analysis.json 由 Python 爬蟲（fetcher.py）每日16:30自動生成
+// 若 JSON 不存在，則顯示示範用靜態資料
+// ═══════════════════════════════════════════════
+
+let DATA = null;
+let selectedCode = null;
+let selectedLayer = "fundamental";
+let aiCache = {};
+
+// ── 讀取資料 ──────────────────────────────────
+async function loadData() {
+  try {
+    // 嘗試讀取真實資料
+    const res = await fetch("data/analysis.json?t=" + Date.now());
+    if (!res.ok) throw new Error("No data");
+    DATA = await res.json();
+  } catch {
+    // 找不到時顯示示範資料
+    DATA = getDemoData();
+  }
+  render();
+}
+
+// ── 頁面切換 ──────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("page-" + name).classList.add("active");
+  event.currentTarget.classList.add("active");
+}
+
+// ── 評分工具 ──────────────────────────────────
+function getSignal(score) {
+  if (score >= 75) return { cls: "buy",   label: "買進" };
+  if (score >= 55) return { cls: "watch", label: "觀察" };
+  return { cls: "avoid", label: "迴避" };
+}
+
+function barColor(layer) {
+  return { fundamental: "#3b82f6", technical: "#f59e0b", chips: "#a855f7" }[layer] || "#10b981";
+}
+
+function metricColor(score) {
+  return score >= 75 ? "#10b981" : score >= 55 ? "#f59e0b" : "#ef4444";
+}
+
+// ── SVG 量規 ──────────────────────────────────
+function gauge(score, size = 64) {
+  const r = size / 2 - 6;
+  const circ = 2 * Math.PI * r;
+  const fill = (score / 100) * circ * 0.75;
+  const color = score >= 75 ? "#10b981" : score >= 55 ? "#f59e0b" : "#ef4444";
+  return `<svg width="${size}" height="${size}" style="transform:rotate(135deg)">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"
+      stroke-dasharray="${circ*0.75} ${circ}" stroke-linecap="round"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="5"
+      stroke-dasharray="${fill} ${circ}" stroke-linecap="round"/>
+    <text x="${size/2}" y="${size/2+1}" text-anchor="middle" dominant-baseline="middle"
+      fill="white" font-size="13" font-weight="700" font-family="IBM Plex Mono"
+      style="transform:rotate(-135deg);transform-origin:${size/2}px ${size/2}px">${score}</text>
+  </svg>`;
+}
+
+function barHtml(value, color) {
+  return `<div class="bar-track"><div class="bar-fill" style="width:${value}%;background:${color}"></div></div>`;
+}
+
+// ── 渲染主函數 ────────────────────────────────
+function render() {
+  if (!DATA) return;
+
+  // 更新時間
+  document.getElementById("updated-at").textContent = `資料更新：${DATA.updated_at} ｜ 每日16:30自動更新`;
+
+  // 持股總值
+  const port = DATA.portfolio || [];
+  const totalVal = port.reduce((s, p) => s + (p.value || 0), 0);
+  const totalPnl = port.reduce((s, p) => s + (p.pnl || 0), 0);
+  const totalPct = totalVal > 0 ? ((totalPnl / (totalVal - totalPnl)) * 100).toFixed(1) : 0;
+  document.getElementById("total-value").textContent = `NT$${(totalVal/10000).toFixed(1)}萬`;
+  document.getElementById("total-pnl").innerHTML =
+    `<span style="color:${totalPnl>=0?'#10b981':'#ef4444'}">${totalPnl>=0?"▲":"▼"} ${Math.abs(totalPnl/10000).toFixed(1)}萬 (${totalPct}%)</span>`;
+
+  renderOverview();
+  renderPortfolio();
+  renderStockSelector();
+}
+
+// ── 總覽 ──────────────────────────────────────
+function renderOverview() {
+  const buyStocks = [...DATA.stocks]
+    .map(s => ({ ...s }))
+    .filter(s => s.scores.total >= 75)
+    .sort((a, b) => b.scores.total - a.scores.total);
+
+  let html = buyStocks.length === 0
+    ? '<div style="text-align:center;padding:20px;color:var(--muted)">目前無買進訊號</div>'
+    : buyStocks.map(s => {
+        const sig = getSignal(s.scores.total);
+        return `<div class="stock-row ${sig.cls}" onclick="goDetail('${s.code}')">
+          <div class="rank">${DATA.stocks.indexOf(DATA.stocks.find(x=>x.code===s.code))+1}</div>
+          <div>${gauge(s.scores.total, 60)}</div>
+          <div>
+            <div class="stock-name">${s.name} <span class="stock-code">${s.code}</span></div>
+            <div class="stock-sector">${s.sector} ｜ NT$${s.price} <span style="color:${s.change>=0?'#10b981':'#ef4444'}">${s.change>=0?"▲":"▼"}${Math.abs(s.change)}%</span></div>
+            <div class="sub-bars">
+              ${["fundamental","technical","chips"].map(l => `
+                <div>
+                  <div class="sub-bar-label"><span>${{fundamental:"基",technical:"技",chips:"碼"}[l]}</span><span>${s.scores[l]}</span></div>
+                  ${barHtml(s.scores[l], barColor(l))}
+                </div>`).join("")}
+            </div>
+          </div>
+          <div><span class="badge ${sig.cls}"><span class="badge-dot"></span>${sig.label} ${s.scores.total}</span></div>
+        </div>`;
+      }).join("");
+  document.getElementById("buy-signals").innerHTML = html;
+
+  // 目標進度
+  const port = DATA.portfolio || [];
+  const totalVal = port.reduce((s, p) => s + (p.value || 0), 0);
+  const pct = Math.min((totalVal / 1000000) * 100, 100).toFixed(1);
+  document.getElementById("progress-current").textContent = `現值 ${(totalVal/10000).toFixed(0)}萬`;
+  document.getElementById("progress-fill").style.width = pct + "%";
+  document.getElementById("progress-pct").textContent = pct + "% 達成";
+}
+
+// ── 持股 ──────────────────────────────────────
+function renderPortfolio() {
+  const port = DATA.portfolio || [];
+  let html = port.map(p => {
+    const pos = (p.pnl || 0) >= 0;
+    return `<div class="portfolio-row">
+      <div class="pnl-bar" style="background:${pos?'#10b981':'#ef4444'}"></div>
+      <div style="flex:1">
+        <div class="portfolio-name">${p.name}</div>
+        <div class="portfolio-meta">${p.code} · ${p.shares.toLocaleString()}股 · 均${p.cost}元</div>
+      </div>
+      <div>
+        <div class="portfolio-value">NT$${((p.value||0)/10000).toFixed(2)}萬</div>
+        <div class="portfolio-pct" style="color:${pos?'#10b981':'#ef4444'}">${pos?"▲":"▼"} ${Math.abs(p.pnl/10000).toFixed(2)}萬 (${p.pct}%)</div>
+      </div>
+    </div>`;
+  }).join("");
+  document.getElementById("portfolio-list").innerHTML = html;
+
+  const totalVal = port.reduce((s, p) => s + (p.value || 0), 0);
+  const totalPnl = port.reduce((s, p) => s + (p.pnl || 0), 0);
+  const totalPct = totalVal > 0 ? ((totalPnl / (totalVal - totalPnl)) * 100).toFixed(1) : 0;
+  document.getElementById("portfolio-total").textContent = `NT$${(totalVal/10000).toFixed(2)}萬`;
+  document.getElementById("portfolio-pnl").innerHTML =
+    `<span style="color:${totalPnl>=0?'#10b981':'#ef4444'}">${totalPnl>=0?"▲":"▼"} NT$${Math.abs(totalPnl/10000).toFixed(2)}萬 (${totalPct}%)</span>`;
+}
+
+// ── 股票選擇器 ────────────────────────────────
+function renderStockSelector() {
+  const html = DATA.stocks.map(s => {
+    const score = s.scores.total;
+    return `<button class="sel-btn ${selectedCode===s.code?'active':''}" onclick="selectStock('${s.code}')">${s.name} <span style="opacity:.5">${score}</span></button>`;
+  }).join("");
+  document.getElementById("stock-selector").innerHTML = html;
+  if (selectedCode) renderDetail();
+}
+
+function goDetail(code) {
+  selectedCode = code;
+  showPage("detail");
+  renderStockSelector();
+  renderDetail();
+  document.querySelectorAll(".nav-btn").forEach((b,i) => {
+    if(i===2) b.classList.add("active"); else b.classList.remove("active");
+  });
+}
+
+function selectStock(code) {
+  selectedCode = code;
+  renderStockSelector();
+  renderDetail();
+}
+
+// ── 個股詳細 ──────────────────────────────────
+function renderDetail() {
+  const s = DATA.stocks.find(x => x.code === selectedCode);
+  if (!s) { document.getElementById("detail-content").innerHTML = '<div class="loading">請選擇股票</div>'; return; }
+
+  const scores = s.scores;
+  const sig = getSignal(scores.total);
+  const ai = aiCache[s.code];
+
+  const layerButtons = [
+    { id: "fundamental", label: "📊 基本面", active: "active-f" },
+    { id: "technical",   label: "📈 技術面", active: "active-t" },
+    { id: "chips",       label: "🔮 籌碼面", active: "active-c" },
+  ].map(l => `<button class="layer-tab ${selectedLayer===l.id ? l.active : ''}" onclick="setLayer('${l.id}')">${l.label} ${scores[l.id]}</button>`).join("");
+
+  let layerContent = "";
+
+  if (selectedLayer === "fundamental") {
+    const f = s.fundamental;
+    const items = [
+      { label:"EPS成長率", val:`${f.eps_growth}%`, good: f.eps_growth>=25, desc:"≥25%優秀，衡量獲利成長速度" },
+      { label:"ROE",       val:`${f.roe}%`,        good: f.roe>=18,        desc:"≥18%優秀，衡量資金運用效率" },
+      { label:"P/E本益比", val:`${f.pe}x`,          good: f.pe<=20,         desc:"越低越便宜，≤20倍合理" },
+      { label:"P/B淨值比", val:`${f.pb}x`,          good: f.pb<=2.5,        desc:"越低越接近淨資產價值" },
+      { label:"現金殖利率", val:`${f.dividend_yield}%`, good: f.dividend_yield>=3.5, desc:"≥3.5%具吸引力" },
+      { label:"負債比率", val:`${f.debt_ratio}%`,   good: f.debt_ratio<=45, desc:"越低財務越健康，≤45%合理" },
+      { label:"營收成長率", val:`${f.revenue_growth}%`, good: f.revenue_growth>=20, desc:"衡量公司業務擴張速度" },
+    ];
+    layerContent = `
+      <div class="info-box" style="border-left:2px solid var(--blue)"><p>📖 基本面：判斷「這家公司值得買嗎」— 從財報評估長期價值</p></div>
+      ${items.map(i=>`
+        <div class="metric-row">
+          <div class="metric-header">
+            <span class="metric-label">${i.label}</span>
+            <div><span class="metric-value" style="color:${i.good?'#10b981':'#f59e0b'}">${i.val}</span></div>
+          </div>
+          ${barHtml(i.good?85:50, i.good?'#10b981':'#f59e0b')}
+          <div class="metric-desc">${i.desc}</div>
+        </div>`).join("")}
+      <div class="info-box" style="margin-top:12px"><p>💡 ${f.note}</p></div>`;
+  }
+
+  if (selectedLayer === "technical") {
+    const t = s.technical;
+    layerContent = `
+      <div class="info-box" style="border-left:2px solid var(--amber)"><p>📖 技術面：判斷「何時買賣最有利」— 分析K線均線找進出場時機</p></div>
+      <div class="strategy-grid">
+        <div class="strategy-item"><div class="strategy-label">支撐位</div><div class="strategy-value" style="color:#10b981">NT$${t.support}</div></div>
+        <div class="strategy-item"><div class="strategy-label">現價</div><div class="strategy-value">NT$${s.price}</div></div>
+        <div class="strategy-item"><div class="strategy-label">壓力位</div><div class="strategy-value" style="color:#ef4444">NT$${t.resistance}</div></div>
+      </div>
+      ${[
+        {label:"趨勢方向", val:t.trend, desc:"站上MA20且MA60=上升，否則為盤整或下降"},
+        {label:"MA20位置", val:t.ma20, desc:"站上均線代表短期多頭"},
+        {label:"MA60位置", val:t.ma60, desc:"站上季線代表中期多頭"},
+        {label:"KD K值",   val:t.kd_k, desc:"K<30超賣是買點，K>70超買要小心"},
+        {label:"MACD狀態", val:t.macd, desc:"黃金交叉為買進訊號"},
+        {label:"RSI",      val:t.rsi,  desc:"30以下超賣，70以上超買"},
+        {label:"成交量",   val:t.volume, desc:"放量確認趨勢，縮量需謹慎"},
+      ].map(i=>`
+        <div class="metric-row">
+          <div class="metric-header">
+            <span class="metric-label">${i.label}</span>
+            <span class="metric-value" style="color:var(--amber)">${i.val}</span>
+          </div>
+          <div class="metric-desc">${i.desc}</div>
+        </div>`).join("")}
+      <div class="info-box" style="margin-top:12px"><p>💡 ${t.note}</p></div>`;
+  }
+
+  if (selectedLayer === "chips") {
+    const c = s.chips;
+    layerContent = `
+      <div class="info-box" style="border-left:2px solid var(--purple)"><p>📖 籌碼面：判斷「誰在買賣，方向跟不跟」— 外資投信同步買超是最強信號</p></div>
+      ${[
+        {label:`外資（權重35%）`, val:`連買${c.foreign_days}天 / +${(c.foreign_net||0).toLocaleString()}張`, desc:"連買≥3天為強買進信號"},
+        {label:`投信（權重20%）`, val:`連買${c.trust_days}天 / +${(c.trust_net||0).toLocaleString()}張`,   desc:"外資投信同步買超最佳"},
+        {label:`自營商（權重10%）`,val:`${c.dealer_net>0?"+":""}${(c.dealer_net||0).toLocaleString()}張`,  desc:"短線參考指標"},
+        {label:"大戶持股變化",  val:c.big_holder_change||"N/A", desc:"增加代表主力看好，籌碼集中"},
+        {label:"融資水位",      val:c.margin_ratio||"N/A",      desc:"低=健康，高=散戶過熱風險"},
+      ].map(i=>`
+        <div class="metric-row">
+          <div class="metric-header">
+            <span class="metric-label">${i.label}</span>
+            <span class="metric-value" style="color:var(--purple)">${i.val}</span>
+          </div>
+          <div class="metric-desc">${i.desc}</div>
+        </div>`).join("")}
+      ${c.is_warning ? `<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:10px;font-size:11px;color:#ef4444;margin-top:8px">⚠️ 此股為注意股/處置股，建議迴避</div>` : ""}
+      <div class="info-box" style="margin-top:12px"><p>💡 ${c.note}</p></div>`;
+  }
+
+  // AI 區塊
+  let aiHtml = "";
+  if (ai && !ai.loading) {
+    if (ai.error) {
+      aiHtml = `<div style="color:#ef4444;font-size:.8rem">${ai.summary}</div>`;
+    } else {
+      aiHtml = `
+        <div class="ai-summary">${ai.summary}</div>
+        <div class="strategy-grid">
+          <div class="strategy-item"><div class="strategy-label">🟢 建議進場</div><div class="strategy-value" style="color:#10b981">${ai.entry||"—"}</div></div>
+          <div class="strategy-item"><div class="strategy-label">🔴 停損</div><div class="strategy-value" style="color:#ef4444">${ai.stop||"—"}</div></div>
+          <div class="strategy-item"><div class="strategy-label">🎯 目標</div><div class="strategy-value" style="color:#f59e0b">${ai.target||"—"}</div></div>
+        </div>
+        ${(ai.risks||[]).length>0 ? `<div style="margin-top:12px"><div style="color:var(--muted);font-size:10px;margin-bottom:6px">⚠️ 風險提示</div>${ai.risks.map(r=>`<div class="risk-item">• ${r}</div>`).join("")}</div>` : ""}
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
+          <span style="color:var(--muted);font-size:10px">信心等級</span>
+          <span class="conviction-badge" style="background:${ai.conviction==="高"?"rgba(16,185,129,.15)":ai.conviction==="中"?"rgba(245,158,11,.15)":"rgba(239,68,68,.15)"};color:${ai.conviction==="高"?"#10b981":ai.conviction==="中"?"#f59e0b":"#ef4444"}">${ai.conviction||"—"}</span>
+        </div>`;
+    }
+  } else if (ai && ai.loading) {
+    aiHtml = `<div class="ai-placeholder" style="color:#10b981;animation:pulse 1.5s infinite">Claude 正在分析三層數據中...</div>`;
+  } else {
+    aiHtml = `<div class="ai-placeholder">點擊「執行分析」讓 Claude 整合三層數據<br><span style="font-size:10px;opacity:.6">給出進場價、停損位、目標價與風險提示</span></div>`;
+  }
+
+  document.getElementById("detail-content").innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800">${s.name}</span>
+            <span style="color:var(--muted);font-size:.8rem">${s.code}</span>
+            <span class="badge ${sig.cls}"><span class="badge-dot"></span>${sig.label} ${scores.total}</span>
+          </div>
+          <div style="color:var(--muted);font-size:.75rem">${s.sector} ｜ NT$${s.price} <span style="color:${s.change>=0?'#10b981':'#ef4444'}">${s.change>=0?"▲":"▼"}${Math.abs(s.change)}%</span></div>
+        </div>
+        ${gauge(scores.total, 72)}
+      </div>
+      <div class="layer-tabs">${layerButtons}</div>
+      ${layerContent}
+    </div>
+    <div class="ai-box">
+      <div class="ai-header">
+        <div><div class="ai-title">🤖 Claude AI 綜合分析</div><div class="ai-sub">整合三層指標 → 具體進出場建議</div></div>
+        <button class="ai-btn" onclick="runAI('${s.code}')" ${ai&&ai.loading?'disabled':''}>
+          ${ai&&ai.loading?"分析中...":ai&&!ai.error?"重新分析":"執行分析"}
+        </button>
+      </div>
+      ${aiHtml}
+    </div>`;
+}
+
+function setLayer(layer) {
+  selectedLayer = layer;
+  renderDetail();
+}
+
+// ── Claude AI 分析 ─────────────────────────────
+// 【邏輯】
+// 將三層分析的所有指標打包成結構化提示
+// 透過 Anthropic API 取得 Claude 的進出場建議
+// 回傳 JSON：{ summary, entry, stop, target, risks[], conviction }
+
+async function runAI(code) {
+  const s = DATA.stocks.find(x => x.code === code);
+  if (!s) return;
+  aiCache[code] = { loading: true };
+  renderDetail();
+
+  const prompt = `你是台股專業投資分析師。根據以下三層分析資料，給出具體買賣建議。
+只回傳純 JSON，不含任何說明文字或 markdown。
+
+股票：${s.code} ${s.name}（${s.sector}）現價 NT$${s.price}
+
+評分：總${s.scores.total}/基本面${s.scores.fundamental}/技術面${s.scores.technical}/籌碼面${s.scores.chips}
+
+基本面：EPS成長${s.fundamental.eps_growth}%、ROE${s.fundamental.roe}%、P/E=${s.fundamental.pe}、P/B=${s.fundamental.pb}、殖利率${s.fundamental.dividend_yield}%、負債比${s.fundamental.debt_ratio}%、營收成長${s.fundamental.revenue_growth}%
+
+技術面：趨勢=${s.technical.trend}、MA20=${s.technical.ma20}、MA60=${s.technical.ma60}、KD=${s.technical.kd_k}/${s.technical.kd_d}、MACD=${s.technical.macd}、RSI=${s.technical.rsi}、量=${s.technical.volume}、支撐=${s.technical.support}、壓力=${s.technical.resistance}
+
+籌碼：外資連買${s.chips.foreign_days}天/${s.chips.foreign_net}張、投信連買${s.chips.trust_days}天/${s.chips.trust_net}張、自營${s.chips.dealer_net}張、融資=${s.chips.margin_ratio}
+
+投資人：停損-10%、目標1年資產達100萬、穩健兼積極
+
+請回傳 JSON：{ "summary": "200字內繁體中文分析", "entry": "建議進場價格區間", "stop": "停損價", "target": "目標價", "risks": ["風險1","風險2"], "conviction": "高/中/低" }`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: "你是台股投資分析師，只回傳純 JSON，不含任何 markdown 或說明文字。",
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === "text")?.text || "{}";
+    const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+    aiCache[code] = parsed;
+  } catch (e) {
+    aiCache[code] = { summary: "分析失敗，請稍後再試", error: true };
+  }
+  renderDetail();
+}
+
+// ── 示範資料（API 尚未串接時使用） ───────────────
+function getDemoData() {
+  return {
+    updated_at: "示範資料（尚未串接真實API）",
+    stocks: [
+      { code:"3037", name:"欣興", sector:"PCB/ABF載板", price:102, change:3.2,
+        scores:{total:86,fundamental:78,technical:88,chips:92},
+        fundamental:{eps:8.4,eps_growth:38,roe:18.2,pe:12.1,pb:2.2,dividend_yield:3.8,debt_ratio:42,revenue_growth:28,note:"ABF載板龍頭，Rubin需求爆發"},
+        technical:{ma20:"站上",ma60:"站上",trend:"上升",kd_k:42,kd_d:38,macd:"黃金交叉",rsi:55,volume:"放量",support:95,resistance:115,note:"初升段，均線多頭排列"},
+        chips:{foreign_days:5,foreign_net:12400,trust_days:3,trust_net:3200,dealer_net:800,big_holder_change:"+1.2%",margin_ratio:"低",is_warning:false,note:"外資投信同步買超"}},
+      { code:"2344", name:"華邦電", sector:"記憶體", price:85.7, change:1.8,
+        scores:{total:78,fundamental:62,technical:82,chips:88},
+        fundamental:{eps:3.2,eps_growth:22,roe:12.4,pe:26.8,pb:1.8,dividend_yield:2.1,debt_ratio:38,revenue_growth:18,note:"記憶體漲價循環受益"},
+        technical:{ma20:"站上",ma60:"貼近",trend:"上升",kd_k:38,kd_d:35,macd:"翻多",rsi:48,volume:"放量",support:80,resistance:95,note:"KD低檔翻多"},
+        chips:{foreign_days:4,foreign_net:49497,trust_days:2,trust_net:1800,dealer_net:400,big_holder_change:"+0.8%",margin_ratio:"低",is_warning:false,note:"外資單日大買近5萬張"}},
+      { code:"2303", name:"聯電", sector:"晶圓代工", price:74.5, change:-0.7,
+        scores:{total:65,fundamental:70,technical:58,chips:68},
+        fundamental:{eps:4.1,eps_growth:19,roe:14.8,pe:18.2,pb:1.5,dividend_yield:4.2,debt_ratio:33,revenue_growth:15,note:"成熟製程漲價題材"},
+        technical:{ma20:"貼近",ma60:"站上",trend:"盤整",kd_k:55,kd_d:52,macd:"持平",rsi:52,volume:"縮量",support:70,resistance:80,note:"盤整區等突破"},
+        chips:{foreign_days:3,foreign_net:49302,trust_days:-1,trust_net:-500,dealer_net:200,big_holder_change:"+0.3%",margin_ratio:"中",is_warning:false,note:"外資積極但投信轉賣"}},
+      { code:"3231", name:"緯創", sector:"AI伺服器", price:140, change:2.1,
+        scores:{total:80,fundamental:85,technical:76,chips:80},
+        fundamental:{eps:7.8,eps_growth:45,roe:22.1,pe:17.9,pb:3.1,dividend_yield:2.5,debt_ratio:45,revenue_growth:42,note:"AI伺服器組裝龍頭"},
+        technical:{ma20:"站上",ma60:"站上",trend:"上升",kd_k:61,kd_d:58,macd:"偏多",rsi:62,volume:"平穩",support:130,resistance:155,note:"強勢股，趨勢完整"},
+        chips:{foreign_days:4,foreign_net:31159,trust_days:3,trust_net:2100,dealer_net:600,big_holder_change:"+1.5%",margin_ratio:"低",is_warning:false,note:"三大法人同步買超"}},
+      { code:"2330", name:"台積電", sector:"晶圓代工", price:2095, change:1.2,
+        scores:{total:72,fundamental:88,technical:65,chips:62},
+        fundamental:{eps:48.2,eps_growth:52,roe:28.4,pe:43.5,pb:8.2,dividend_yield:1.8,debt_ratio:28,revenue_growth:38,note:"AI晶片需求王者"},
+        technical:{ma20:"站上",ma60:"站上",trend:"上升",kd_k:72,kd_d:68,macd:"多頭",rsi:68,volume:"放量",support:1950,resistance:2200,note:"強勢但KD偏高"},
+        chips:{foreign_days:2,foreign_net:4210,trust_days:1,trust_net:1200,dealer_net:-200,big_holder_change:"+0.2%",margin_ratio:"低",is_warning:false,note:"外資選擇性布局"}},
+    ],
+    portfolio: [
+      {code:"0050",name:"元大台灣50",shares:2000,cost:85,price:87,value:174000,pnl:4000,pct:2.4},
+      {code:"0056",name:"元大高股息",shares:1000,cost:40,price:41,value:41000,pnl:1000,pct:2.5},
+      {code:"2317",name:"鴻海",shares:500,cost:210,price:225,value:112500,pnl:7500,pct:7.1},
+      {code:"5880",name:"合庫金",shares:3000,cost:22,price:23.15,value:69450,pnl:3450,pct:5.2},
+      {code:"2330",name:"台積電",shares:75,cost:2000,price:2095,value:157125,pnl:7125,pct:4.8},
+    ],
+  };
+}
+
+// ── 啟動 ──────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
