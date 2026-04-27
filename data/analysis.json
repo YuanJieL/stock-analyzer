@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-04-27 02:36",
+  "updated_at": "2026-04-27 10:34",
   "stocks": [
     {
       "code": "3037",
@@ -42,7 +42,7 @@
         "note": "技術面資料暫無法取得"
       },
       "chips": {
-        "foreign_days": 9,
+        "foreign_days": 7,
         "foreign_net": 2176601,
         "trust_days": -1,
         "trust_net": -492805,
@@ -50,169 +50,13 @@
         "big_holder_change": "N/A",
         "margin_ratio": "N/A",
         "is_warning": false,
-        "note": "外資連買9天"
+        "note": "外資連買7天"
       }
     },
     {
       "code": "2344",
       "name": "華邦電",
       "sector": "記憶體",
-      "price": 0,
-      "change": 0,
-      "scores": {
-        "total": 48,
-        "fundamental": 52,
-        "technical": 36,
-        "chips": 56
-      },
-      "fundamental": {
-        "eps": 0,
-        "eps_growth": 0,
-        "roe": 0,
-        "pe": 0,
-        "pb": 0,
-        "dividend_yield": 0,
-        "debt_ratio": 0,
-        "revenue_growth": 0,
-        "note": "基本面資料暫無法取得"
-      },
-      "technical": {
-        "price": 0,
-        "change": 0,
-        "ma20": "N/A",
-        "ma60": "N/A",
-        "trend": "N/A",
-        "kd_k": 50,
-        "kd_d": 50,
-        "macd": "N/A",
-        "rsi": 50,
-        "volume": "N/A",
-        "support": 0,
-        "resistance": 0,
-        "ma20_val": 0,
-        "ma60_val": 0,
-        "note": "技術面資料暫無法取得"
-      },
-      "chips": {
-        "foreign_days": -1,
-        "foreign_net": -704145,
-        "trust_days": 1,
-        "trust_net": 2663867,
-        "dealer_net": 1331108,
-        "big_holder_change": "N/A",
-        "margin_ratio": "N/A",
-        "is_warning": false,
-        "note": "無明顯法人訊號"
-      }
-    },
-    {
-      "code": "2303",
-      "name": "聯電",
-      "sector": "晶圓代工",
-      "price": 0,
-      "change": 0,
-      "scores": {
-        "total": 46,
-        "fundamental": 52,
-        "technical": 36,
-        "chips": 51
-      },
-      "fundamental": {
-        "eps": 0,
-        "eps_growth": 0,
-        "roe": 0,
-        "pe": 0,
-        "pb": 0,
-        "dividend_yield": 0,
-        "debt_ratio": 0,
-        "revenue_growth": 0,
-        "note": "基本面資料暫無法取得"
-      },
-      "technical": {
-        "price": 0,
-        "change": 0,
-        "ma20": "N/A",
-        "ma60": "N/A",
-        "trend": "N/A",
-        "kd_k": 50,
-        "kd_d": 50,
-        "macd": "N/A",
-        "rsi": 50,
-        "volume": "N/A",
-        "support": 0,
-        "resistance": 0,
-        "ma20_val": 0,
-        "ma60_val": 0,
-        "note": "技術面資料暫無法取得"
-      },
-      "chips": {
-        "foreign_days": -1,
-        "foreign_net": -4078397,
-        "trust_days": -1,
-        "trust_net": -38578,
-        "dealer_net": 1797695,
-        "big_holder_change": "N/A",
-        "margin_ratio": "N/A",
-        "is_warning": false,
-        "note": "無明顯法人訊號"
-      }
-    },
-    {
-      "code": "3231",
-      "name": "緯創",
-      "sector": "AI伺服器",
-      "price": 0,
-      "change": 0,
-      "scores": {
-        "total": 51,
-        "fundamental": 52,
-        "technical": 36,
-        "chips": 68
-      },
-      "fundamental": {
-        "eps": 0,
-        "eps_growth": 0,
-        "roe": 0,
-        "pe": 0,
-        "pb": 0,
-        "dividend_yield": 0,
-        "debt_ratio": 0,
-        "revenue_growth": 0,
-        "note": "基本面資料暫無法取得"
-      },
-      "technical": {
-        "price": 0,
-        "change": 0,
-        "ma20": "N/A",
-        "ma60": "N/A",
-        "trend": "N/A",
-        "kd_k": 50,
-        "kd_d": 50,
-        "macd": "N/A",
-        "rsi": 50,
-        "volume": "N/A",
-        "support": 0,
-        "resistance": 0,
-        "ma20_val": 0,
-        "ma60_val": 0,
-        "note": "技術面資料暫無法取得"
-      },
-      "chips": {
-        "foreign_days": 1,
-        "foreign_net": 8434606,
-        "trust_days": 5,
-        "trust_net": 1416886,
-        "dealer_net": 638444,
-        "big_holder_change": "N/A",
-        "margin_ratio": "N/A",
-        "is_warning": false,
-        "note": "投信連買5天"
-      }
-    },
-    {
-      "code": "2330",
-      "name": "台積電",
-      "sector": "晶圓代工",
       "price": 0,
       "change": 0,
       "scores": {
@@ -250,15 +94,171 @@
         "note": "技術面資料暫無法取得"
       },
       "chips": {
-        "foreign_days": 2,
-        "foreign_net": 8305592,
+        "foreign_days": 1,
+        "foreign_net": 11770458,
         "trust_days": 2,
-        "trust_net": 1168156,
-        "dealer_net": 1057987,
+        "trust_net": 17767242,
+        "dealer_net": 1861289,
         "big_holder_change": "N/A",
         "margin_ratio": "N/A",
         "is_warning": false,
         "note": "投信連買2天"
+      }
+    },
+    {
+      "code": "2303",
+      "name": "聯電",
+      "sector": "晶圓代工",
+      "price": 0,
+      "change": 0,
+      "scores": {
+        "total": 41,
+        "fundamental": 52,
+        "technical": 36,
+        "chips": 35
+      },
+      "fundamental": {
+        "eps": 0,
+        "eps_growth": 0,
+        "roe": 0,
+        "pe": 0,
+        "pb": 0,
+        "dividend_yield": 0,
+        "debt_ratio": 0,
+        "revenue_growth": 0,
+        "note": "基本面資料暫無法取得"
+      },
+      "technical": {
+        "price": 0,
+        "change": 0,
+        "ma20": "N/A",
+        "ma60": "N/A",
+        "trend": "N/A",
+        "kd_k": 50,
+        "kd_d": 50,
+        "macd": "N/A",
+        "rsi": 50,
+        "volume": "N/A",
+        "support": 0,
+        "resistance": 0,
+        "ma20_val": 0,
+        "ma60_val": 0,
+        "note": "技術面資料暫無法取得"
+      },
+      "chips": {
+        "foreign_days": -3,
+        "foreign_net": -19286246,
+        "trust_days": -2,
+        "trust_net": -9991857,
+        "dealer_net": 9687330,
+        "big_holder_change": "N/A",
+        "margin_ratio": "N/A",
+        "is_warning": false,
+        "note": "外資連賣3天⚠️"
+      }
+    },
+    {
+      "code": "3231",
+      "name": "緯創",
+      "sector": "AI伺服器",
+      "price": 0,
+      "change": 0,
+      "scores": {
+        "total": 48,
+        "fundamental": 52,
+        "technical": 36,
+        "chips": 58
+      },
+      "fundamental": {
+        "eps": 0,
+        "eps_growth": 0,
+        "roe": 0,
+        "pe": 0,
+        "pb": 0,
+        "dividend_yield": 0,
+        "debt_ratio": 0,
+        "revenue_growth": 0,
+        "note": "基本面資料暫無法取得"
+      },
+      "technical": {
+        "price": 0,
+        "change": 0,
+        "ma20": "N/A",
+        "ma60": "N/A",
+        "trend": "N/A",
+        "kd_k": 50,
+        "kd_d": 50,
+        "macd": "N/A",
+        "rsi": 50,
+        "volume": "N/A",
+        "support": 0,
+        "resistance": 0,
+        "ma20_val": 0,
+        "ma60_val": 0,
+        "note": "技術面資料暫無法取得"
+      },
+      "chips": {
+        "foreign_days": 1,
+        "foreign_net": 7536844,
+        "trust_days": -1,
+        "trust_net": -301982,
+        "dealer_net": 740000,
+        "big_holder_change": "N/A",
+        "margin_ratio": "N/A",
+        "is_warning": false,
+        "note": "無明顯法人訊號"
+      }
+    },
+    {
+      "code": "2330",
+      "name": "台積電",
+      "sector": "晶圓代工",
+      "price": 0,
+      "change": 0,
+      "scores": {
+        "total": 49,
+        "fundamental": 52,
+        "technical": 36,
+        "chips": 61
+      },
+      "fundamental": {
+        "eps": 0,
+        "eps_growth": 0,
+        "roe": 0,
+        "pe": 0,
+        "pb": 0,
+        "dividend_yield": 0,
+        "debt_ratio": 0,
+        "revenue_growth": 0,
+        "note": "基本面資料暫無法取得"
+      },
+      "technical": {
+        "price": 0,
+        "change": 0,
+        "ma20": "N/A",
+        "ma60": "N/A",
+        "trend": "N/A",
+        "kd_k": 50,
+        "kd_d": 50,
+        "macd": "N/A",
+        "rsi": 50,
+        "volume": "N/A",
+        "support": 0,
+        "resistance": 0,
+        "ma20_val": 0,
+        "ma60_val": 0,
+        "note": "技術面資料暫無法取得"
+      },
+      "chips": {
+        "foreign_days": -1,
+        "foreign_net": -18940165,
+        "trust_days": 3,
+        "trust_net": 4992808,
+        "dealer_net": 1146280,
+        "big_holder_change": "N/A",
+        "margin_ratio": "N/A",
+        "is_warning": false,
+        "note": "投信連買3天"
       }
     }
   ],
