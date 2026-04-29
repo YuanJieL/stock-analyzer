@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-04-29 08:56",
+  "updated_at": "2026-04-29 10:30",
   "stocks": [
     {
       "code": "3037",
@@ -8,21 +8,21 @@
       "price": 803.0,
       "change": -2.67,
       "scores": {
-        "total": 50,
-        "fundamental": 52,
+        "total": 49,
+        "fundamental": 50,
         "technical": 60,
         "chips": 35
       },
       "fundamental": {
-        "eps": 0,
+        "eps": 7.04,
         "eps_growth": 0,
         "roe": 0,
-        "pe": 0,
-        "pb": 0,
-        "dividend_yield": 0,
+        "pe": 114.0,
+        "pb": 118.09,
+        "dividend_yield": 803.0,
         "debt_ratio": 0,
         "revenue_growth": 0,
-        "note": "基本面資料暫無法取得"
+        "note": "本益比114.0倍，殖利率803.0%，淨值比118.09倍"
       },
       "technical": {
         "price": 803.0,
@@ -60,21 +60,21 @@
       "price": 92.7,
       "change": -2.93,
       "scores": {
-        "total": 53,
-        "fundamental": 52,
+        "total": 52,
+        "fundamental": 50,
         "technical": 60,
         "chips": 45
       },
       "fundamental": {
-        "eps": 0,
+        "eps": 0.81,
         "eps_growth": 0,
         "roe": 0,
-        "pe": 0,
-        "pb": 0,
-        "dividend_yield": 0,
+        "pe": 114.0,
+        "pb": 105.34,
+        "dividend_yield": 92.7,
         "debt_ratio": 0,
         "revenue_growth": 0,
-        "note": "基本面資料暫無法取得"
+        "note": "本益比114.0倍，殖利率92.7%，淨值比105.34倍"
       },
       "technical": {
         "price": 92.7,
@@ -165,20 +165,20 @@
       "change": 0.0,
       "scores": {
         "total": 54,
-        "fundamental": 52,
+        "fundamental": 50,
         "technical": 60,
         "chips": 50
       },
       "fundamental": {
-        "eps": 0,
+        "eps": 1.23,
         "eps_growth": 0,
         "roe": 0,
-        "pe": 0,
-        "pb": 0,
-        "dividend_yield": 0,
+        "pe": 114.0,
+        "pb": 16.3,
+        "dividend_yield": 140.5,
         "debt_ratio": 0,
         "revenue_growth": 0,
-        "note": "基本面資料暫無法取得"
+        "note": "本益比114.0倍，殖利率140.5%，淨值比16.3倍"
       },
       "technical": {
         "price": 140.5,
@@ -217,20 +217,20 @@
       "change": -1.58,
       "scores": {
         "total": 54,
-        "fundamental": 52,
+        "fundamental": 50,
         "technical": 60,
         "chips": 51
       },
       "fundamental": {
-        "eps": 0,
+        "eps": 19.12,
         "eps_growth": 0,
         "roe": 0,
-        "pe": 0,
-        "pb": 0,
-        "dividend_yield": 0,
+        "pe": 114.0,
+        "pb": 32.91,
+        "dividend_yield": 2180.0,
         "debt_ratio": 0,
         "revenue_growth": 0,
-        "note": "基本面資料暫無法取得"
+        "note": "本益比114.0倍，殖利率2180.0%，淨值比32.91倍"
       },
       "technical": {
         "price": 2180.0,
