@@ -1,29 +1,25 @@
 """
 =============================================================
-台股智能分析系統 - 資料爬蟲 v3（限速修正版）
+台股智能分析系統 - 資料爬蟲 v4（FinMind版）
 =============================================================
 
-【v3 修正項目】
-  1. Yahoo Finance 限速（429）問題
-     → 每次請求前加入隨機等待（3~8秒）
-     → 技術面改用 TWSE 官方每日收盤資料備援
+【v4 全面改用 FinMind API】
+  不需要 Token，每小時300次請求免費額度完全夠用
 
-  2. 基本面改用 TWSE 官方本益比/殖利率 API
-     → 不再依賴 Yahoo Finance info
-     → 直接從證交所取得 PE、PB、殖利率
+  資料來源對應：
+  股價/技術指標  → TaiwanStockPrice（日線OHLCV）
+  P/E、P/B、殖利率 → TaiwanStockPER
+  三大法人        → TaiwanStockInstitutionalInvestorsBuySell
+  融資融券        → TaiwanStockMarginPurchaseShortSale
+  財報EPS/ROE    → TaiwanStockFinancialStatements
 
-  3. 法人張數單位修正
-     → TWSE API 回傳單位為「股」，除以1000換算成「張」
-
-  4. 加入重試機制（最多3次）
+  Base URL: https://api.finmindtrade.com/api/v4/data
 =============================================================
 """
 
 import json
 import time
-import random
 import requests
-import yfinance as yf
 import pandas as pd
 from datetime import datetime, date, timedelta
 import os
@@ -47,169 +43,158 @@ PORTFOLIO = [
     {"code": "2330", "name": "台積電",      "shares": 75,   "cost": 2000},
 ]
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
-}
+FINMIND_URL = "https://api.finmindtrade.com/api/v4/data"
+# 若有Token可填入（選填，無Token也能用）
+FINMIND_TOKEN = ""
 
-def retry_get(url, retries=3, wait=5, **kwargs):
-    for i in range(retries):
+# ─────────────────────────────────────────────
+# FinMind 統一請求函數
+# ─────────────────────────────────────────────
+# 【邏輯】
+# 所有 FinMind 請求都走這個函數
+# 參數：dataset名稱、股票代號、開始日期、結束日期
+# 回傳：list of dict，失敗回傳空list
+
+def finmind_get(dataset: str, stock_id: str,
+                start_date: str, end_date: str = None) -> list:
+    """統一的 FinMind API 請求"""
+    if end_date is None:
+        end_date = date.today().strftime("%Y-%m-%d")
+
+    params = {
+        "dataset":    dataset,
+        "data_id":    stock_id,
+        "start_date": start_date,
+        "end_date":   end_date,
+    }
+    headers = {}
+    if FINMIND_TOKEN:
+        headers["Authorization"] = f"Bearer {FINMIND_TOKEN}"
+
+    for attempt in range(3):
         try:
-            res = requests.get(url, timeout=15, headers=HEADERS, **kwargs)
-            if res.status_code == 200:
-                return res
-            print(f"      HTTP {res.status_code}，{wait}秒後重試...")
+            res = requests.get(FINMIND_URL, params=params,
+                               headers=headers, timeout=20)
+            data = res.json()
+            if data.get("status") == 200:
+                return data.get("data", [])
+            print(f"      FinMind {dataset} 回傳: {data.get('msg','')}")
+            return []
         except Exception as e:
-            print(f"      請求失敗: {e}，{wait}秒後重試...")
-        time.sleep(wait)
-    return None
+            print(f"      FinMind 請求失敗（第{attempt+1}次）: {e}")
+            time.sleep(3)
+    return []
 
 # ─────────────────────────────────────────────
 # Layer 2：技術面
+# Dataset: TaiwanStockPrice
+# 欄位: date, open, max, min, close, Trading_Volume
 # ─────────────────────────────────────────────
+# 【邏輯】
+# 抓取近6個月日線資料
+# 自行計算 MA20/MA60/KD/RSI/MACD
+# 成交量與20日均量比較判斷放量/縮量
+
 def fetch_price_and_technicals(code: str) -> dict:
-    result = _fetch_from_yahoo(code)
-    if result["price"] > 0:
-        return result
-    print(f"      Yahoo 失敗，改用 TWSE 備援...")
-    return _fetch_from_twse(code)
+    """從 FinMind 抓股價並計算技術指標"""
+    start = (date.today() - timedelta(days=180)).strftime("%Y-%m-%d")
+    rows  = finmind_get("TaiwanStockPrice", code, start)
 
-def _fetch_from_yahoo(code: str) -> dict:
-    wait = random.uniform(3, 8)
-    print(f"      等待 {wait:.1f} 秒避免 Yahoo 限速...")
-    time.sleep(wait)
-    try:
-        df = yf.download(f"{code}.TW", period="6mo", interval="1d",
-                         progress=False, auto_adjust=True)
-        if df.empty:
-            return _empty_technical()
-
-        close = df["Close"].squeeze()
-        high  = df["High"].squeeze()
-        low   = df["Low"].squeeze()
-        vol   = df["Volume"].squeeze()
-
-        price  = round(float(close.iloc[-1]), 2)
-        prev   = float(close.iloc[-2]) if len(close) > 1 else price
-        change = round((price - prev) / prev * 100, 2) if prev > 0 else 0
-
-        ma20 = float(close.rolling(20).mean().iloc[-1])
-        ma60 = float(close.rolling(60).mean().iloc[-1]) if len(close) >= 60 else ma20
-
-        if price > ma20 * 1.005 and price > ma60 * 1.005:
-            trend, ma20_s, ma60_s = "上升", "站上", "站上"
-        elif price > ma20:
-            trend, ma20_s = "盤整", "站上"
-            ma60_s = "站上" if price > ma60 else "跌破"
-        elif abs(price - ma20) / ma20 < 0.02:
-            trend, ma20_s = "盤整", "貼近"
-            ma60_s = "站上" if price > ma60 else "跌破"
-        else:
-            trend, ma20_s, ma60_s = "下降", "跌破", "跌破"
-
-        low9  = low.rolling(9).min()
-        high9 = high.rolling(9).max()
-        rsv   = ((close - low9) / (high9 - low9).replace(0, 1) * 100).fillna(50)
-        k = rsv.ewm(com=2, adjust=False).mean()
-        d = k.ewm(com=2, adjust=False).mean()
-        kd_k = round(float(k.iloc[-1]), 1)
-        kd_d = round(float(d.iloc[-1]), 1)
-
-        delta = close.diff()
-        gain  = delta.clip(lower=0).rolling(14).mean()
-        loss  = (-delta.clip(upper=0)).rolling(14).mean()
-        rsi   = round(float((100 - 100 / (1 + gain / loss.replace(0, 0.001))).iloc[-1]), 1)
-
-        ema12  = close.ewm(span=12, adjust=False).mean()
-        ema26  = close.ewm(span=26, adjust=False).mean()
-        macd_l = ema12 - ema26
-        signal = macd_l.ewm(span=9, adjust=False).mean()
-        hist   = macd_l - signal
-
-        if len(macd_l) >= 2:
-            if macd_l.iloc[-1] > signal.iloc[-1] and macd_l.iloc[-2] <= signal.iloc[-2]:
-                macd_s = "黃金交叉"
-            elif macd_l.iloc[-1] < signal.iloc[-1] and macd_l.iloc[-2] >= signal.iloc[-2]:
-                macd_s = "死亡交叉"
-            elif macd_l.iloc[-1] > signal.iloc[-1]:
-                macd_s = "多頭" if hist.iloc[-1] > hist.iloc[-2] else "偏多"
-            else:
-                macd_s = "空頭"
-        else:
-            macd_s = "持平"
-
-        vol_ma  = float(vol.rolling(20).mean().iloc[-1])
-        today_v = float(vol.iloc[-1])
-        vol_s   = "大量" if today_v > vol_ma*1.5 else "放量" if today_v > vol_ma*1.1 else "縮量" if today_v < vol_ma*0.7 else "平穩"
-
-        support    = round(float(low.rolling(20).min().iloc[-1]), 2)
-        resistance = round(float(high.rolling(20).max().iloc[-1]), 2)
-
-        notes = []
-        if macd_s == "黃金交叉": notes.append("MACD黃金交叉")
-        if kd_k < 30: notes.append("KD超賣")
-        if rsi < 35:  notes.append("RSI超賣")
-        if trend == "上升": notes.append("均線多頭")
-
-        print(f"      [Yahoo] 價格={price} 趨勢={trend} KD={kd_k} RSI={rsi} MACD={macd_s}")
-
-        return {
-            "price": price, "change": change,
-            "ma20": ma20_s, "ma60": ma60_s, "trend": trend,
-            "kd_k": kd_k, "kd_d": kd_d, "macd": macd_s,
-            "rsi": rsi, "volume": vol_s,
-            "support": support, "resistance": resistance,
-            "ma20_val": round(ma20, 2), "ma60_val": round(ma60, 2),
-            "note": "、".join(notes) if notes else "技術面中性",
-        }
-    except Exception as e:
-        print(f"      [Yahoo] 失敗: {e}")
+    if not rows:
+        print(f"      [技術面] {code} 無資料")
         return _empty_technical()
 
-def _fetch_from_twse(code: str) -> dict:
-    try:
-        today_str = date.today().strftime("%Y%m%d")
-        url = f"https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?response=json&date={today_str}&stockNo={code}"
-        res = retry_get(url)
-        if not res:
-            return _empty_technical()
+    df = pd.DataFrame(rows)
+    df["date"]  = pd.to_datetime(df["date"])
+    df = df.sort_values("date").reset_index(drop=True)
 
-        data = res.json()
-        if data.get("stat") != "OK" or not data.get("data"):
-            return _empty_technical()
+    # 欄位對應
+    close = df["close"].astype(float)
+    high  = df["max"].astype(float)
+    low   = df["min"].astype(float)
+    vol   = df["Trading_Volume"].astype(float)
 
-        close_prices = []
-        for row in data["data"]:
-            try:
-                close_prices.append(float(row[6].replace(",", "")))
-            except:
-                pass
+    price  = round(float(close.iloc[-1]), 2)
+    prev   = float(close.iloc[-2]) if len(close) > 1 else price
+    change = round((price - prev) / prev * 100, 2) if prev > 0 else 0
 
-        if not close_prices:
-            return _empty_technical()
+    # 均線
+    ma20 = float(close.rolling(20).mean().iloc[-1])
+    ma60 = float(close.rolling(60).mean().iloc[-1]) if len(close) >= 60 else ma20
 
-        price  = close_prices[-1]
-        change = round((close_prices[-1] - close_prices[-2]) / close_prices[-2] * 100, 2) if len(close_prices) >= 2 else 0
-        ma20   = sum(close_prices[-20:]) / min(len(close_prices), 20)
-        trend  = "上升" if price > ma20 * 1.01 else "盤整" if abs(price - ma20) / ma20 < 0.03 else "下降"
-        ma20_s = "站上" if price > ma20 else "跌破"
+    # 趨勢判斷
+    if price > ma20 * 1.005 and price > ma60 * 1.005:
+        trend, ma20_s, ma60_s = "上升", "站上", "站上"
+    elif price > ma20:
+        trend, ma20_s = "盤整", "站上"
+        ma60_s = "站上" if price > ma60 else "跌破"
+    elif abs(price - ma20) / ma20 < 0.02:
+        trend, ma20_s = "盤整", "貼近"
+        ma60_s = "站上" if price > ma60 else "跌破"
+    else:
+        trend, ma20_s, ma60_s = "下降", "跌破", "跌破"
 
-        print(f"      [TWSE備援] 價格={price} 趨勢={trend}")
+    # KD（9日）
+    low9  = low.rolling(9).min()
+    high9 = high.rolling(9).max()
+    rsv   = ((close - low9) / (high9 - low9).replace(0, 1) * 100).fillna(50)
+    k     = rsv.ewm(com=2, adjust=False).mean()
+    d     = k.ewm(com=2, adjust=False).mean()
+    kd_k  = round(float(k.iloc[-1]), 1)
+    kd_d  = round(float(d.iloc[-1]), 1)
 
-        return {
-            "price": price, "change": change,
-            "ma20": ma20_s, "ma60": "N/A", "trend": trend,
-            "kd_k": 50, "kd_d": 50, "macd": "N/A",
-            "rsi": 50, "volume": "N/A",
-            "support":    min(close_prices[-20:]) if len(close_prices) >= 20 else price * 0.9,
-            "resistance": max(close_prices[-20:]) if len(close_prices) >= 20 else price * 1.1,
-            "ma20_val": round(ma20, 2), "ma60_val": 0,
-            "note": "技術指標使用備援資料",
-        }
-    except Exception as e:
-        print(f"      [TWSE備援] 失敗: {e}")
-        return _empty_technical()
+    # RSI（14日）
+    delta = close.diff()
+    gain  = delta.clip(lower=0).rolling(14).mean()
+    loss  = (-delta.clip(upper=0)).rolling(14).mean()
+    rsi   = round(float((100 - 100 / (1 + gain / loss.replace(0, 0.001))).iloc[-1]), 1)
+
+    # MACD（12,26,9）
+    ema12  = close.ewm(span=12, adjust=False).mean()
+    ema26  = close.ewm(span=26, adjust=False).mean()
+    macd_l = ema12 - ema26
+    signal = macd_l.ewm(span=9, adjust=False).mean()
+    hist   = macd_l - signal
+
+    if len(macd_l) >= 2:
+        if macd_l.iloc[-1] > signal.iloc[-1] and macd_l.iloc[-2] <= signal.iloc[-2]:
+            macd_s = "黃金交叉"
+        elif macd_l.iloc[-1] < signal.iloc[-1] and macd_l.iloc[-2] >= signal.iloc[-2]:
+            macd_s = "死亡交叉"
+        elif macd_l.iloc[-1] > signal.iloc[-1]:
+            macd_s = "多頭" if hist.iloc[-1] > hist.iloc[-2] else "偏多"
+        else:
+            macd_s = "空頭"
+    else:
+        macd_s = "持平"
+
+    # 成交量
+    vol_ma  = float(vol.rolling(20).mean().iloc[-1])
+    today_v = float(vol.iloc[-1])
+    vol_s   = ("大量" if today_v > vol_ma * 1.5 else
+               "放量" if today_v > vol_ma * 1.1 else
+               "縮量" if today_v < vol_ma * 0.7 else "平穩")
+
+    support    = round(float(low.rolling(20).min().iloc[-1]), 2)
+    resistance = round(float(high.rolling(20).max().iloc[-1]), 2)
+
+    notes = []
+    if macd_s == "黃金交叉": notes.append("MACD黃金交叉")
+    if kd_k < 30: notes.append("KD超賣")
+    if rsi < 35:  notes.append("RSI超賣")
+    if trend == "上升": notes.append("均線多頭")
+
+    print(f"      [技術面] 價格={price} 趨勢={trend} KD={kd_k} RSI={rsi} MACD={macd_s}")
+
+    return {
+        "price": price, "change": change,
+        "ma20": ma20_s, "ma60": ma60_s, "trend": trend,
+        "kd_k": kd_k, "kd_d": kd_d, "macd": macd_s,
+        "rsi": rsi, "volume": vol_s,
+        "support": support, "resistance": resistance,
+        "ma20_val": round(ma20, 2), "ma60_val": round(ma60, 2),
+        "note": "、".join(notes) if notes else "技術面中性",
+    }
 
 def _empty_technical():
     return {
@@ -223,73 +208,91 @@ def _empty_technical():
     }
 
 # ─────────────────────────────────────────────
-# Layer 1：基本面 - TWSE 官方本益比殖利率表
+# Layer 1：基本面
+# Dataset: TaiwanStockPER（P/E、P/B、殖利率）
+#          TaiwanStockFinancialStatements（EPS、ROE）
 # ─────────────────────────────────────────────
+# 【邏輯】
+# TaiwanStockPER：每日更新，直接取最新一筆
+#   → dividend_yield（殖利率%）、PER（本益比）、PBR（淨值比）
+#
+# TaiwanStockFinancialStatements：季報
+#   → 篩選 type == "EPS" 取得每股盈餘
+#   → 篩選 type == "ROE" 取得股東權益報酬率
+#   → EPS成長率 = (最新季EPS - 去年同季EPS) / 去年同季EPS * 100
+
 def fetch_fundamental(code: str, price: float) -> dict:
-    try:
-        today_str = date.today().strftime("%Y%m%d")
-        url = f"https://www.twse.com.tw/rwd/zh/afterTrading/BWIBBU_d?response=json&date={today_str}&selectType=ALL"
-        res = retry_get(url)
+    """從 FinMind 抓基本面資料"""
+    # 1. P/E、P/B、殖利率
+    start_per = (date.today() - timedelta(days=10)).strftime("%Y-%m-%d")
+    per_rows  = finmind_get("TaiwanStockPER", code, start_per)
 
-        if not res:
-            return _empty_fundamental()
+    pe, pb, dividend_yield = 0.0, 0.0, 0.0
+    if per_rows:
+        latest = per_rows[-1]
+        pe             = float(latest.get("PER") or 0)
+        pb             = float(latest.get("PBR") or 0)
+        dividend_yield = float(latest.get("dividend_yield") or 0)
 
-        data = res.json()
-        if data.get("stat") != "OK":
-            return _empty_fundamental()
+    # 2. 財報：EPS、ROE、負債比率
+    start_fin = (date.today() - timedelta(days=400)).strftime("%Y-%m-%d")
+    fin_rows  = finmind_get("TaiwanStockFinancialStatements", code, start_fin)
 
-        for row in data.get("data", []):
-            if not isinstance(row, list) or len(row) < 6:
-                continue
-            if row[0].strip() != code:
-                continue
+    eps, eps_growth, roe, revenue_growth = 0.0, 0.0, 0.0, 0.0
 
-            def to_float(s):
-                try:
-                    return float(str(s).replace(",", "").strip())
-                except:
-                    return 0.0
+    if fin_rows:
+        fin_df = pd.DataFrame(fin_rows)
 
-            dividend_yield = to_float(row[2])
-            pe             = to_float(row[4])
-            pb             = to_float(row[5])
-            eps            = round(price / pe, 2) if pe > 0 else 0
+        # EPS
+        eps_df = fin_df[fin_df["type"] == "EPS"].sort_values("date")
+        if len(eps_df) >= 1:
+            eps = float(eps_df["value"].iloc[-1])
+        if len(eps_df) >= 5:
+            eps_prev = float(eps_df["value"].iloc[-5])
+            eps_growth = round((eps - eps_prev) / abs(eps_prev) * 100, 1) if eps_prev != 0 else 0
 
-            # 補充從 Yahoo 抓 ROE 等
-            roe, eps_growth, debt_ratio, revenue_growth = _fetch_extra_from_yahoo(code)
+        # ROE
+        roe_df = fin_df[fin_df["type"] == "ROE"].sort_values("date")
+        if len(roe_df) >= 1:
+            roe = round(float(roe_df["value"].iloc[-1]), 1)
 
-            note = f"本益比{pe}倍，殖利率{dividend_yield}%，淨值比{pb}倍"
-            print(f"      [基本面] {code} PE={pe} 殖利率={dividend_yield}% PB={pb} ROE={roe}%")
+        # 營收成長率（Revenue YoY）
+        rev_df = fin_df[fin_df["type"].str.contains("Revenue|營業收入", na=False)].sort_values("date")
+        if len(rev_df) >= 5:
+            rev_now  = float(rev_df["value"].iloc[-1])
+            rev_prev = float(rev_df["value"].iloc[-5])
+            revenue_growth = round((rev_now - rev_prev) / abs(rev_prev) * 100, 1) if rev_prev != 0 else 0
 
-            return {
-                "eps": eps, "eps_growth": eps_growth, "roe": roe,
-                "pe": pe, "pb": pb, "dividend_yield": dividend_yield,
-                "debt_ratio": debt_ratio, "revenue_growth": revenue_growth,
-                "note": note,
-            }
+    # 3. 負債比率（資產負債表）
+    debt_ratio = 0.0
+    bal_rows = finmind_get("TaiwanStockBalanceSheet", code, start_fin)
+    if bal_rows:
+        bal_df = pd.DataFrame(bal_rows)
+        asset_df = bal_df[bal_df["type"].str.contains("TotalAssets|資產總計", na=False)].sort_values("date")
+        liab_df  = bal_df[bal_df["type"].str.contains("TotalLiabilities|負債總計", na=False)].sort_values("date")
+        if len(asset_df) >= 1 and len(liab_df) >= 1:
+            total_asset = float(asset_df["value"].iloc[-1])
+            total_liab  = float(liab_df["value"].iloc[-1])
+            debt_ratio  = round(total_liab / total_asset * 100, 1) if total_asset > 0 else 0
 
-        return _empty_fundamental()
+    # EPS 反推（若財報沒抓到但有 PE）
+    if eps == 0 and pe > 0:
+        eps = round(price / pe, 2)
 
-    except Exception as e:
-        print(f"      [基本面] {code} 錯誤: {e}")
-        return _empty_fundamental()
+    note = f"本益比{pe}倍，殖利率{dividend_yield}%，淨值比{pb}倍，EPS={eps}元"
+    print(f"      [基本面] PE={pe} PB={pb} 殖利率={dividend_yield}% EPS={eps} ROE={roe}%")
 
-def _fetch_extra_from_yahoo(code: str) -> tuple:
-    try:
-        time.sleep(random.uniform(2, 5))
-        info = yf.Ticker(f"{code}.TW").info
-        roe_raw = info.get("returnOnEquity", 0)
-        eg_raw  = info.get("earningsGrowth", 0)
-        de_raw  = info.get("debtToEquity", 0)
-        rg_raw  = info.get("revenueGrowth", 0)
-        roe            = round(float(roe_raw) * 100, 1) if roe_raw else 0
-        eps_growth     = round(float(eg_raw) * 100, 1) if eg_raw else 0
-        de             = float(de_raw) / 100 if de_raw else 0
-        debt_ratio     = round(de / (1 + de) * 100, 1) if de > 0 else 0
-        revenue_growth = round(float(rg_raw) * 100, 1) if rg_raw else 0
-        return roe, eps_growth, debt_ratio, revenue_growth
-    except:
-        return 0, 0, 0, 0
+    return {
+        "eps": round(eps, 2),
+        "eps_growth": eps_growth,
+        "roe": roe,
+        "pe": pe,
+        "pb": pb,
+        "dividend_yield": dividend_yield,
+        "debt_ratio": debt_ratio,
+        "revenue_growth": revenue_growth,
+        "note": note,
+    }
 
 def _empty_fundamental():
     return {
@@ -300,63 +303,39 @@ def _empty_fundamental():
     }
 
 # ─────────────────────────────────────────────
-# Layer 3：籌碼面（修正張數單位）
+# Layer 3：籌碼面
+# Dataset: TaiwanStockInstitutionalInvestorsBuySell
+# 欄位: date, stock_id, name, buy, sell
+# name 值: 外資, 投信, 自營商
 # ─────────────────────────────────────────────
-def fetch_institutional(code: str, days: int = 10) -> dict:
-    foreign_list = []
-    trust_list   = []
-    dealer_list  = []
+# 【邏輯】
+# 抓近20個交易日的三大法人資料
+# 計算外資/投信各自的「連續買超或賣超天數」
+# 買超 = buy - sell > 0，以張（千股）為單位
 
-    today   = date.today()
-    offset  = 0
-    checked = 0
+def fetch_institutional(code: str, days: int = 15) -> dict:
+    """從 FinMind 抓三大法人資料"""
+    start = (date.today() - timedelta(days=days * 2)).strftime("%Y-%m-%d")
+    rows  = finmind_get("TaiwanStockInstitutionalInvestorsBuySell", code, start)
 
-    while checked < days and offset < 20:
-        target = today - timedelta(days=offset)
-        offset += 1
-        if target.weekday() >= 5:
-            continue
+    if not rows:
+        print(f"      [籌碼] {code} 無資料")
+        return _empty_chips()
 
-        date_str = target.strftime("%Y%m%d")
-        url = f"https://www.twse.com.tw/rwd/zh/fund/T86?response=json&date={date_str}&selectType=ALLBUT0999"
+    df = pd.DataFrame(rows)
+    df["date"] = pd.to_datetime(df["date"])
+    df["net"]  = df["buy"].astype(float) - df["sell"].astype(float)
 
-        try:
-            res = retry_get(url, retries=2, wait=3)
-            if not res:
-                continue
+    # 各法人分開處理
+    def get_daily_net(name):
+        sub = df[df["name"] == name].sort_values("date", ascending=False)
+        return sub["net"].tolist()
 
-            data = res.json()
-            if data.get("stat") != "OK":
-                continue
+    foreign_list = get_daily_net("外資")
+    trust_list   = get_daily_net("投信")
+    dealer_list  = get_daily_net("自營商")
 
-            for row in data.get("data", []):
-                if not isinstance(row, list) or len(row) < 11:
-                    continue
-                if row[0].strip() != code:
-                    continue
-
-                def to_int(s):
-                    try:
-                        return int(str(s).replace(",", "").replace("+", "").strip())
-                    except:
-                        return 0
-
-                # 單位修正：股 → 張（÷1000）
-                foreign_net = to_int(row[4])  // 1000
-                trust_net   = to_int(row[10]) // 1000
-                dealer_net  = (to_int(row[13]) + to_int(row[16])) // 1000 if len(row) > 16 else 0
-
-                foreign_list.append(foreign_net)
-                trust_list.append(trust_net)
-                dealer_list.append(dealer_net)
-                checked += 1
-                break
-
-            time.sleep(0.5)
-
-        except Exception as e:
-            print(f"      [法人] {code} {date_str} 錯誤: {e}")
-
+    # 計算連續買超天數
     def count_streak(lst):
         if not lst:
             return 0
@@ -372,65 +351,70 @@ def fetch_institutional(code: str, days: int = 10) -> dict:
     f_days = count_streak(foreign_list)
     t_days = count_streak(trust_list)
 
+    # 最新一日買賣超（單位：張，FinMind已是股數，除以1000換張）
+    f_net = int(foreign_list[0] / 1000) if foreign_list else 0
+    t_net = int(trust_list[0] / 1000) if trust_list else 0
+    d_net = int(dealer_list[0] / 1000) if dealer_list else 0
+
     notes = []
     if f_days >= 3:  notes.append(f"外資連買{f_days}天")
     if t_days >= 2:  notes.append(f"投信連買{t_days}天")
     if f_days >= 3 and t_days >= 2: notes.append("法人同步買超")
     if f_days <= -3: notes.append(f"外資連賣{abs(f_days)}天⚠️")
 
-    print(f"      [籌碼] {code} 外資{f_days}天/{foreign_list[0] if foreign_list else 0}張 投信{t_days}天/{trust_list[0] if trust_list else 0}張")
+    print(f"      [籌碼] 外資{f_days}天/{f_net}張 投信{t_days}天/{t_net}張 自營{d_net}張")
 
     return {
         "foreign_days": f_days,
-        "foreign_net":  foreign_list[0] if foreign_list else 0,
+        "foreign_net":  f_net,
         "trust_days":   t_days,
-        "trust_net":    trust_list[0] if trust_list else 0,
-        "dealer_net":   dealer_list[0] if dealer_list else 0,
+        "trust_net":    t_net,
+        "dealer_net":   d_net,
         "big_holder_change": "N/A",
         "margin_ratio": fetch_margin(code),
         "is_warning":   False,
         "note":         "、".join(notes) if notes else "無明顯法人訊號",
     }
 
+def _empty_chips():
+    return {
+        "foreign_days": 0, "foreign_net": 0,
+        "trust_days": 0, "trust_net": 0,
+        "dealer_net": 0,
+        "big_holder_change": "N/A",
+        "margin_ratio": "N/A",
+        "is_warning": False,
+        "note": "籌碼資料暫無法取得",
+    }
+
+# ─────────────────────────────────────────────
+# 融資水位
+# Dataset: TaiwanStockMarginPurchaseShortSale
+# 欄位: MarginPurchaseTodayBalance（融資餘額）
+#       MarginPurchaseLimit（融資限額）
+# ─────────────────────────────────────────────
 def fetch_margin(code: str) -> str:
-    try:
-        for offset in range(5):
-            target = date.today() - timedelta(days=offset)
-            if target.weekday() >= 5:
-                continue
-            url = f"https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?response=json&date={target.strftime('%Y%m%d')}&selectType=STOCK"
-            res = retry_get(url, retries=2, wait=3)
-            if not res:
-                continue
-            data = res.json()
-            if data.get("stat") != "OK":
-                continue
-            for key in ["data", "data2"]:
-                for row in data.get(key, []):
-                    if not isinstance(row, list) or len(row) < 7:
-                        continue
-                    if row[0].strip() != code:
-                        continue
-                    try:
-                        balance = int(row[4].replace(",", ""))
-                        limit   = int(row[6].replace(",", ""))
-                        ratio   = balance / limit if limit > 0 else 0
-                        return "低" if ratio < 0.15 else "中" if ratio < 0.25 else "高"
-                    except:
-                        pass
-            break
+    start = (date.today() - timedelta(days=5)).strftime("%Y-%m-%d")
+    rows  = finmind_get("TaiwanStockMarginPurchaseShortSale", code, start)
+    if not rows:
         return "N/A"
-    except:
-        return "N/A"
+    latest  = rows[-1]
+    balance = float(latest.get("MarginPurchaseTodayBalance") or 0)
+    limit   = float(latest.get("MarginPurchaseLimit") or 1)
+    ratio   = balance / limit if limit > 0 else 0
+    return "低" if ratio < 0.15 else "中" if ratio < 0.25 else "高"
 
 # ─────────────────────────────────────────────
 # 評分引擎
 # ─────────────────────────────────────────────
 WEIGHTS = {"fundamental": 35, "technical": 35, "chips": 30}
 SUB_WEIGHTS = {
-    "fundamental": {"eps_growth":15,"roe":15,"pe":12,"pb":8,"dividend_yield":12,"debt_ratio":10,"revenue_growth":15,"moat":13},
-    "technical":   {"trend":20,"ma":15,"kd":15,"macd":15,"rsi":10,"volume":15,"support":10},
-    "chips":       {"foreign":35,"trust":20,"dealer":10,"big_holder":20,"margin":15},
+    "fundamental": {"eps_growth":15,"roe":15,"pe":12,"pb":8,
+                    "dividend_yield":12,"debt_ratio":10,"revenue_growth":15,"moat":13},
+    "technical":   {"trend":20,"ma":15,"kd":15,"macd":15,
+                    "rsi":10,"volume":15,"support":10},
+    "chips":       {"foreign":35,"trust":20,"dealer":10,
+                    "big_holder":20,"margin":15},
 }
 
 def score_fundamental(f):
@@ -470,38 +454,33 @@ def calc_layer(raw, sub_w):
     return round(sum(raw.get(k, 0) * sub_w[k] / total_w for k in sub_w))
 
 def calc_total(f, t, c):
-    return round(f * WEIGHTS["fundamental"]/100 + t * WEIGHTS["technical"]/100 + c * WEIGHTS["chips"]/100)
+    return round(f * WEIGHTS["fundamental"]/100 +
+                 t * WEIGHTS["technical"]/100 +
+                 c * WEIGHTS["chips"]/100)
 
 # ─────────────────────────────────────────────
 # 持股損益
 # ─────────────────────────────────────────────
-def fetch_portfolio():
+def fetch_portfolio() -> list:
     result = []
+    start  = (date.today() - timedelta(days=5)).strftime("%Y-%m-%d")
+
     for p in PORTFOLIO:
-        price = p["cost"]
-        try:
-            time.sleep(random.uniform(2, 5))
-            hist = yf.download(f"{p['code']}.TW", period="3d", interval="1d",
-                               progress=False, auto_adjust=True)
-            if not hist.empty:
-                price = round(float(hist["Close"].squeeze().iloc[-1]), 2)
-        except:
-            try:
-                today_str = date.today().strftime("%Y%m%d")
-                url = f"https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?response=json&date={today_str}&stockNo={p['code']}"
-                res = retry_get(url, retries=2, wait=3)
-                if res:
-                    data = res.json()
-                    if data.get("stat") == "OK" and data.get("data"):
-                        price = float(data["data"][-1][6].replace(",", ""))
-            except:
-                pass
+        rows  = finmind_get("TaiwanStockPrice", p["code"], start)
+        price = p["cost"]  # 預設用成本價
+
+        if rows:
+            price = float(rows[-1]["close"])
 
         value = round(price * p["shares"], 0)
         cost  = p["cost"] * p["shares"]
         pnl   = round(value - cost, 0)
         pct   = round(pnl / cost * 100, 2) if cost > 0 else 0
-        result.append({**p, "price": price, "value": value, "pnl": pnl, "pct": pct})
+
+        result.append({**p, "price": price, "value": value,
+                       "pnl": pnl, "pct": pct})
+
+        time.sleep(0.5)  # 避免請求過快
 
     return result
 
@@ -510,7 +489,7 @@ def fetch_portfolio():
 # ─────────────────────────────────────────────
 def main():
     print(f"\n{'='*50}")
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M')}] 台股分析系統 v3 啟動")
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M')}] 台股分析系統 v4 (FinMind) 啟動")
     print(f"{'='*50}\n")
 
     results = []
@@ -522,11 +501,12 @@ def main():
         tech  = fetch_price_and_technicals(code)
         price = tech["price"]
         fund  = fetch_fundamental(code, price)
-        chips = fetch_institutional(code, days=10)
+        chips = fetch_institutional(code, days=20)
 
         fs = score_fundamental(fund)
         ts = score_technical(tech)
         cs = score_chips(chips)
+
         f_total = calc_layer(fs, SUB_WEIGHTS["fundamental"])
         t_total = calc_layer(ts, SUB_WEIGHTS["technical"])
         c_total = calc_layer(cs, SUB_WEIGHTS["chips"])
@@ -538,13 +518,14 @@ def main():
             **stock,
             "price":       price,
             "change":      tech["change"],
-            "scores":      {"total": total, "fundamental": f_total, "technical": t_total, "chips": c_total},
+            "scores":      {"total": total, "fundamental": f_total,
+                            "technical": t_total, "chips": c_total},
             "fundamental": fund,
             "technical":   tech,
             "chips":       chips,
         })
 
-        time.sleep(2)
+        time.sleep(1)
 
     print("► 計算持股損益...")
     portfolio = fetch_portfolio()
@@ -562,6 +543,7 @@ def main():
     total_val = sum(p["value"] for p in portfolio)
     print(f"\n{'='*50}")
     print(f"✅ 完成！持股總值 NT${total_val/10000:.1f}萬")
+    print(f"   資料來源：FinMind API（無需Token）")
     print(f"   已輸出 data/analysis.json")
     print(f"{'='*50}\n")
 
