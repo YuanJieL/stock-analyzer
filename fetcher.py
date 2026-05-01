@@ -230,9 +230,11 @@ def fetch_fundamental(code: str, price: float) -> dict:
     pe, pb, dividend_yield = 0.0, 0.0, 0.0
     if per_rows:
         latest = per_rows[-1]
-        pe             = float(latest.get("PER") or 0)
-        pb             = float(latest.get("PBR") or 0)
-        dividend_yield = float(latest.get("dividend_yield") or 0)
+        pe = float(latest.get("PER") or 0)
+        pb = float(latest.get("PBR") or 0)
+        # FinMind 殖利率單位為 % 的100倍（如 213.5 = 2.135%），需除以100
+        raw_dy = float(latest.get("dividend_yield") or 0)
+        dividend_yield = round(raw_dy / 100, 2) if raw_dy > 100 else round(raw_dy, 2)
 
     # 2. 財報：EPS、ROE、負債比率
     start_fin = (date.today() - timedelta(days=400)).strftime("%Y-%m-%d")
@@ -243,21 +245,28 @@ def fetch_fundamental(code: str, price: float) -> dict:
     if fin_rows:
         fin_df = pd.DataFrame(fin_rows)
 
-        # EPS
+        # EPS（FinMind type="EPS"，單位：元）
         eps_df = fin_df[fin_df["type"] == "EPS"].sort_values("date")
         if len(eps_df) >= 1:
             eps = float(eps_df["value"].iloc[-1])
         if len(eps_df) >= 5:
+            # 與去年同季比較（前4季）
             eps_prev = float(eps_df["value"].iloc[-5])
             eps_growth = round((eps - eps_prev) / abs(eps_prev) * 100, 1) if eps_prev != 0 else 0
 
-        # ROE
-        roe_df = fin_df[fin_df["type"] == "ROE"].sort_values("date")
-        if len(roe_df) >= 1:
-            roe = round(float(roe_df["value"].iloc[-1]), 1)
+        # ROE = 本期淨利 / 股東權益（自行計算）
+        # FinMind 沒有直接的 ROE 欄位
+        # 用 IncomeAfterTaxes（本期淨利）/ EquityAttributableToOwnersOfParent（母公司淨利）近似
+        net_df = fin_df[fin_df["type"] == "IncomeAfterTaxes"].sort_values("date")
+        eq_df  = fin_df[fin_df["type"] == "EquityAttributableToOwnersOfParent"].sort_values("date")
+        if len(net_df) >= 1 and len(eq_df) >= 1:
+            net_income = float(net_df["value"].iloc[-1])
+            equity     = float(eq_df["value"].iloc[-1])
+            # 年化：單季淨利 × 4 / 股東權益
+            roe = round((net_income * 4 / equity) * 100, 1) if equity > 0 else 0
 
-        # 營收成長率（Revenue YoY）
-        rev_df = fin_df[fin_df["type"].str.contains("Revenue|營業收入", na=False)].sort_values("date")
+        # 營收成長率 YoY（Revenue 欄位）
+        rev_df = fin_df[fin_df["type"] == "Revenue"].sort_values("date")
         if len(rev_df) >= 5:
             rev_now  = float(rev_df["value"].iloc[-1])
             rev_prev = float(rev_df["value"].iloc[-5])
@@ -268,8 +277,9 @@ def fetch_fundamental(code: str, price: float) -> dict:
     bal_rows = finmind_get("TaiwanStockBalanceSheet", code, start_fin)
     if bal_rows:
         bal_df = pd.DataFrame(bal_rows)
-        asset_df = bal_df[bal_df["type"].str.contains("TotalAssets|資產總計", na=False)].sort_values("date")
-        liab_df  = bal_df[bal_df["type"].str.contains("TotalLiabilities|負債總計", na=False)].sort_values("date")
+        # 正確欄位名稱：TotalAssets、TotalLiabilities
+        asset_df = bal_df[bal_df["type"] == "TotalAssets"].sort_values("date")
+        liab_df  = bal_df[bal_df["type"] == "TotalLiabilities"].sort_values("date")
         if len(asset_df) >= 1 and len(liab_df) >= 1:
             total_asset = float(asset_df["value"].iloc[-1])
             total_liab  = float(liab_df["value"].iloc[-1])
