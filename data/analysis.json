@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-05-01 07:15",
+  "updated_at": "2026-05-01 08:44",
   "stocks": [
     {
       "code": "3037",
@@ -8,19 +8,19 @@
       "price": 883.0,
       "change": 9.96,
       "scores": {
-        "total": 57,
-        "fundamental": 46,
+        "total": 65,
+        "fundamental": 68,
         "technical": 72,
         "chips": 52
       },
       "fundamental": {
         "eps": 3.28,
         "eps_growth": 446.7,
-        "roe": 0.0,
+        "roe": 426.8,
         "pe": 129.85,
         "pb": 12.37,
         "dividend_yield": 0.23,
-        "debt_ratio": 100.0,
+        "debt_ratio": 0.0,
         "revenue_growth": 24.5,
         "note": "本益比129.85倍，殖利率0.23%，淨值比12.37倍，EPS=3.28元"
       },
@@ -60,19 +60,19 @@
       "price": 89.8,
       "change": -3.13,
       "scores": {
-        "total": 49,
-        "fundamental": 35,
+        "total": 56,
+        "fundamental": 56,
         "technical": 60,
         "chips": 52
       },
       "fundamental": {
         "eps": 0.76,
         "eps_growth": 0.0,
-        "roe": 0.0,
+        "roe": 361.7,
         "pe": 102.05,
         "pb": 3.74,
         "dividend_yield": 0.56,
-        "debt_ratio": 100.0,
+        "debt_ratio": 0.0,
         "revenue_growth": 0.0,
         "note": "本益比102.05倍，殖利率0.56%，淨值比3.74倍，EPS=0.76元"
       },
@@ -112,19 +112,19 @@
       "price": 77.3,
       "change": 3.76,
       "scores": {
-        "total": 62,
-        "fundamental": 57,
+        "total": 70,
+        "fundamental": 78,
         "technical": 77,
         "chips": 52
       },
       "fundamental": {
         "eps": 1.29,
         "eps_growth": 108.1,
-        "roe": 0.0,
+        "roe": 398.7,
         "pe": 19.42,
         "pb": 2.39,
         "dividend_yield": 3.36,
-        "debt_ratio": 100.0,
+        "debt_ratio": 0.0,
         "revenue_growth": 5.5,
         "note": "本益比19.42倍，殖利率3.36%，淨值比2.39倍，EPS=1.29元"
       },
@@ -164,19 +164,19 @@
       "price": 137.0,
       "change": -2.49,
       "scores": {
-        "total": 58,
-        "fundamental": 51,
+        "total": 66,
+        "fundamental": 72,
         "technical": 71,
         "chips": 52
       },
       "fundamental": {
         "eps": 2.61,
         "eps_growth": 0.0,
-        "roe": 0.0,
+        "roe": 800.6,
         "pe": 15.89,
         "pb": 2.45,
         "dividend_yield": 4.01,
-        "debt_ratio": 100.0,
+        "debt_ratio": 0.0,
         "revenue_growth": 0.0,
         "note": "本益比15.89倍，殖利率4.01%，淨值比2.45倍，EPS=2.61元"
       },
@@ -216,19 +216,19 @@
       "price": 2135.0,
       "change": -2.06,
       "scores": {
-        "total": 56,
-        "fundamental": 36,
+        "total": 63,
+        "fundamental": 57,
         "technical": 79,
         "chips": 52
       },
       "fundamental": {
         "eps": 19.51,
         "eps_growth": 0.0,
-        "roe": 0.0,
+        "roe": 399.7,
         "pe": 32.23,
         "pb": 10.22,
         "dividend_yield": 1.03,
-        "debt_ratio": 100.0,
+        "debt_ratio": 0.0,
         "revenue_growth": 0.0,
         "note": "本益比32.23倍，殖利率1.03%，淨值比10.22倍，EPS=19.51元"
       },
