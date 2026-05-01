@@ -37,8 +37,7 @@ WATCH_LIST = [
 
 PORTFOLIO = [
     {"code": "0050", "name": "元大台灣50", "shares": 2000, "cost": 85},
-    {"code": "0056", "name": "元大高股息",  "shares": 1000, "cost": 40},
-    {"code": "2317", "name": "鴻海",        "shares": 500,  "cost": 210},
+    {"code": "0056", "name": "元大高股息",   "shares": 500,  "cost": 210},
     {"code": "5880", "name": "合庫金",      "shares": 3000, "cost": 22},
     {"code": "2330", "name": "台積電",      "shares": 75,   "cost": 2000},
 ]
