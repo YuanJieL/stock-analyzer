@@ -1,16 +1,16 @@
 {
-  "updated_at": "2026-08-14 09:36",
+  "updated_at": "2026-08-17 09:09",
   "stocks": [
     {
       "code": "3037",
       "name": "欣興",
       "sector": "PCB/ABF載板",
-      "price": 1020.0,
-      "change": 2.0,
+      "price": 1120.0,
+      "change": 9.8,
       "scores": {
-        "total": 57,
+        "total": 59,
         "fundamental": 52,
-        "technical": 65,
+        "technical": 72,
         "chips": 52
       },
       "fundamental": {
@@ -25,20 +25,20 @@
         "note": "本益比67.91倍，殖利率0.19%，淨值比13.09倍，EPS=8.45元"
       },
       "technical": {
-        "price": 1020.0,
-        "change": 2.0,
+        "price": 1120.0,
+        "change": 9.8,
         "ma20": "站上",
         "ma60": "站上",
         "trend": "上升",
-        "kd_k": 86.1,
-        "kd_d": 84.6,
-        "macd": "偏多",
-        "rsi": 66.3,
-        "volume": "縮量",
+        "kd_k": 90.7,
+        "kd_d": 86.6,
+        "macd": "多頭",
+        "rsi": 82.7,
+        "volume": "大量",
         "support": 653.0,
-        "resistance": 1045.0,
-        "ma20_val": 885.5,
-        "ma60_val": 933.15,
+        "resistance": 1120.0,
+        "ma20_val": 904.0,
+        "ma60_val": 936.73,
         "note": "均線多頭"
       },
       "chips": {
@@ -57,12 +57,12 @@
       "code": "2344",
       "name": "華邦電",
       "sector": "記憶體",
-      "price": 183.5,
-      "change": 3.67,
+      "price": 181.5,
+      "change": -1.09,
       "scores": {
-        "total": 63,
+        "total": 61,
         "fundamental": 59,
-        "technical": 77,
+        "technical": 70,
         "chips": 52
       },
       "fundamental": {
@@ -77,20 +77,20 @@
         "note": "本益比20.23倍，殖利率0.27%，淨值比5.0倍，EPS=5.4元"
       },
       "technical": {
-        "price": 183.5,
-        "change": 3.67,
+        "price": 181.5,
+        "change": -1.09,
         "ma20": "站上",
         "ma60": "站上",
         "trend": "上升",
-        "kd_k": 80.1,
-        "kd_d": 78.5,
-        "macd": "多頭",
-        "rsi": 59.3,
-        "volume": "大量",
+        "kd_k": 74.9,
+        "kd_d": 77.3,
+        "macd": "偏多",
+        "rsi": 66.7,
+        "volume": "平穩",
         "support": 117.0,
         "resistance": 193.0,
-        "ma20_val": 158.7,
-        "ma60_val": 169.61,
+        "ma20_val": 160.22,
+        "ma60_val": 170.73,
         "note": "均線多頭"
       },
       "chips": {
@@ -109,12 +109,12 @@
       "code": "2303",
       "name": "聯電",
       "sector": "晶圓代工",
-      "price": 121.0,
-      "change": -2.81,
+      "price": 121.5,
+      "change": 0.41,
       "scores": {
         "total": 59,
         "fundamental": 68,
-        "technical": 57,
+        "technical": 56,
         "chips": 52
       },
       "fundamental": {
@@ -129,20 +129,20 @@
         "note": "本益比18.2倍，殖利率2.16%，淨值比3.42倍，EPS=3.39元"
       },
       "technical": {
-        "price": 121.0,
-        "change": -2.81,
+        "price": 121.5,
+        "change": 0.41,
         "ma20": "貼近",
         "ma60": "跌破",
         "trend": "盤整",
-        "kd_k": 56.3,
-        "kd_d": 57.8,
+        "kd_k": 52.7,
+        "kd_d": 56.1,
         "macd": "多頭",
-        "rsi": 46.3,
+        "rsi": 57.3,
         "volume": "縮量",
         "support": 102.5,
         "resistance": 145.0,
-        "ma20_val": 122.67,
-        "ma60_val": 138.93,
+        "ma20_val": 122.25,
+        "ma60_val": 139.02,
         "note": "技術面中性"
       },
       "chips": {
@@ -161,12 +161,12 @@
       "code": "3231",
       "name": "緯創",
       "sector": "AI伺服器",
-      "price": 193.5,
-      "change": -1.78,
+      "price": 187.0,
+      "change": -3.36,
       "scores": {
-        "total": 66,
+        "total": 64,
         "fundamental": 68,
-        "technical": 75,
+        "technical": 71,
         "chips": 52
       },
       "fundamental": {
@@ -181,20 +181,20 @@
         "note": "本益比15.37倍，殖利率2.84%，淨值比3.17倍，EPS=4.72元"
       },
       "technical": {
-        "price": 193.5,
-        "change": -1.78,
+        "price": 187.0,
+        "change": -3.36,
         "ma20": "站上",
         "ma60": "站上",
         "trend": "上升",
-        "kd_k": 68.6,
-        "kd_d": 73.2,
+        "kd_k": 54.3,
+        "kd_d": 66.9,
         "macd": "偏多",
-        "rsi": 59.8,
-        "volume": "平穩",
-        "support": 141.5,
+        "rsi": 60.1,
+        "volume": "縮量",
+        "support": 144.5,
         "resistance": 206.0,
-        "ma20_val": 178.85,
-        "ma60_val": 164.21,
+        "ma20_val": 181.03,
+        "ma60_val": 164.99,
         "note": "均線多頭"
       },
       "chips": {
@@ -213,40 +213,40 @@
       "code": "2330",
       "name": "台積電",
       "sector": "晶圓代工",
-      "price": 2395.0,
-      "change": -1.64,
+      "price": 2400.0,
+      "change": 0.21,
       "scores": {
-        "total": 59,
+        "total": 60,
         "fundamental": 57,
-        "technical": 67,
+        "technical": 71,
         "chips": 52
       },
       "fundamental": {
-        "eps": 22.08,
+        "eps": 27.25,
         "eps_growth": 0.0,
-        "roe": 400.2,
+        "roe": 400.1,
         "pe": 27.76,
         "pb": 9.66,
         "dividend_yield": 0.92,
         "debt_ratio": 0.0,
         "revenue_growth": 0.0,
-        "note": "本益比27.76倍，殖利率0.92%，淨值比9.66倍，EPS=22.08元"
+        "note": "本益比27.76倍，殖利率0.92%，淨值比9.66倍，EPS=27.25元"
       },
       "technical": {
-        "price": 2395.0,
-        "change": -1.64,
+        "price": 2400.0,
+        "change": 0.21,
         "ma20": "站上",
         "ma60": "站上",
         "trend": "上升",
-        "kd_k": 78.6,
-        "kd_d": 78.8,
+        "kd_k": 69.1,
+        "kd_d": 75.5,
         "macd": "偏多",
-        "rsi": 53.1,
+        "rsi": 59.2,
         "volume": "縮量",
         "support": 2180.0,
         "resistance": 2445.0,
-        "ma20_val": 2359.75,
-        "ma60_val": 2371.0,
+        "ma20_val": 2363.75,
+        "ma60_val": 2373.83,
         "note": "均線多頭"
       },
       "chips": {
@@ -268,40 +268,40 @@
       "name": "元大台灣50",
       "shares": 2000,
       "cost": 85,
-      "price": 106.4,
-      "value": 212800.0,
-      "pnl": 42800.0,
-      "pct": 25.18
+      "price": 106.45,
+      "value": 212900.0,
+      "pnl": 42900.0,
+      "pct": 25.24
     },
     {
       "code": "0056",
       "name": "元大高股息",
       "shares": 500,
       "cost": 210,
-      "price": 53.4,
-      "value": 26700.0,
-      "pnl": -78300.0,
-      "pct": -74.57
+      "price": 53.0,
+      "value": 26500.0,
+      "pnl": -78500.0,
+      "pct": -74.76
     },
     {
       "code": "5880",
       "name": "合庫金",
       "shares": 3000,
       "cost": 22,
-      "price": 24.2,
-      "value": 72600.0,
-      "pnl": 6600.0,
-      "pct": 10.0
+      "price": 24.9,
+      "value": 74700.0,
+      "pnl": 8700.0,
+      "pct": 13.18
     },
     {
       "code": "2330",
       "name": "台積電",
       "shares": 75,
       "cost": 2000,
-      "price": 2395.0,
-      "value": 179625.0,
-      "pnl": 29625.0,
-      "pct": 19.75
+      "price": 2400.0,
+      "value": 180000.0,
+      "pnl": 30000.0,
+      "pct": 20.0
     }
   ]
 }
